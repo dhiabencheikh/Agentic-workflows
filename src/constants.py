@@ -3,8 +3,15 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 # Paths
 PROJECT_ROOT_PATH = Path(__file__).parents[1]
+
+# Copy the values written in .env into the environment variables,
+# so the os.getenv calls below find them. Variables already set
+# in the shell (for example in CI) are kept and win over .env.
+load_dotenv(PROJECT_ROOT_PATH / ".env")
 
 # GCP Configuration
 PROJECT_ID: str | None = os.getenv("GCP_PROJECT_ID")
