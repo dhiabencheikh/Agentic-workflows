@@ -46,8 +46,8 @@ Outside the repo:
 - The teacher's `.env.example` held the teacher's real project ID, and our repo is public. Fix: placeholders.
 - gcloud tokens had expired and need a browser login, which the assistant cannot do. Fix: Dhia ran the login commands himself.
 - Requested bucket name `BenJosh-llmops`: GCS names must be lowercase. Fix: `benjosh-llmops`.
-- Teammate invitation for `sjoshi.rgb` returned 404: GitHub usernames cannot contain dots. Open: get the exact GitHub username.
-- T4 quota region not yet verified (the Cloud Quotas API is not enabled on the project). Open: check in the console before M2.
+- Teammate invitation for `sjoshi.rgb` returned 404: GitHub usernames cannot contain dots. Fix: the real username is `sjoshi-rgb`, invited.
+- T4 quota region: the Cloud Quotas API is not enabled on the project, so it was not read automatically. Dhia confirmed the quota is in `europe-west2`, which matches `GCP_REGION`.
 
 **Exam-style question:** A teammate clones the repo, runs `uv sync`, and the validation script reports a bucket access failure on bucket `None`. Explain why and how to fix it.
 **Answer:** `.env` is git-ignored, so the clone has none. `os.getenv("GCP_BUCKET_NAME")` returns `None`. The teammate copies `.env.example` to `.env`, fills in the values, and runs `gcloud auth application-default login` so the Python libraries have credentials.

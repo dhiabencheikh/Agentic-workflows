@@ -29,8 +29,8 @@ Dhia is the project lead (MSc Data for Finance, Mines Paris PSL x Albert School)
 
 **Course context:** the course project is "build an end-to-end LLMOps flow (same steps as in the course) adapted to a text generation use case of your design" (Session 1 slides, p.33), with the syllabus framing "AI product team at an ed-tech company building an AI tutor". The project is **no longer shared** with the Data & AI Product course: ignore any joint deliverable.
 
-**Team:** Dhia plus one teammate (GitHub username to confirm, `sjoshi.rgb` was not a valid GitHub login). Team name for resources: **BenJosh**. Restitution: next week (exact date TBC, update here).
-Teacher `MathieuHS` invited as collaborator (write access) on 2026-11-10.
+**Team:** Dhia plus one teammate (GitHub `sjoshi-rgb`). Team name for resources: **BenJosh**. Restitution: next week (exact date TBC, update here).
+Teacher `MathieuHS` and teammate `sjoshi-rgb` invited as collaborators (write access) on 2026-11-10.
 
 ## 3. Requirements checklist
 
@@ -85,7 +85,7 @@ Dhia's other current courses: **Data Engineering** (pipelines, storage, BigQuery
 ## 6. Technical constraints (from the practice guides; keep unless there is a reason)
 - Python **3.11.6**, package manager **uv** (`uv add`, `uv sync`), virtual env in `.venv/`
 - GCP project **`agentics-workflows-510809`**, gcloud configuration named `llmops` (switch back to Data Engineering with `gcloud config configurations activate default`)
-- GCP region **europe-west2** (confirm it is where the T4 quota was granted). Bucket **`gs://benjosh-llmops`** (bucket names must be lowercase), multi-region EU, uniform bucket-level access, created 2026-11-10
+- GCP region **europe-west2**: Dhia confirmed on 2026-11-10 that the T4 quota was granted there. Bucket **`gs://benjosh-llmops`** (bucket names must be lowercase), multi-region EU, uniform bucket-level access, created 2026-11-10
 - `.env` is loaded by `python-dotenv` in `src/constants.py`; shell variables win over `.env`
 - Base model: **`microsoft/Phi-3-mini-4k-instruct`** (4k-token context)
 - Fine-tuning approach adapted from https://huggingface.co/blog/dvgodoy/fine-tuning-llm-hugging-face (TRL `SFTTrainer`, PEFT LoRA, BitsAndBytes)
@@ -146,7 +146,7 @@ Dhia's other current courses: **Data Engineering** (pipelines, storage, BigQuery
 3. What the CI harness calls without a GPU: a deployed endpoint, the OpenAI API as a stand-in, or recorded predictions plus deterministic checks
 4. Which OpenAI model for the "hard" route and for the judge; which embedding model for the cache
 5. Routing rule: heuristic, embedding classifier, or a cheap LLM call
-6. Confirm the GPU quota region (Vertex AI quota "Custom model training Nvidia T4 GPUs per region"). Bucket: settled, `benjosh-llmops`
+6. Settled: T4 quota region `europe-west2` (confirmed by Dhia), bucket `benjosh-llmops`
 
 ## 11. Repository layout (target, extends the practice structure)
 ```

@@ -208,7 +208,7 @@ It is not about where data is stored (that is the bucket location). It is about 
 - Quotas are per region: you can have 1 T4 allowed in `europe-west4` and 0 in `europe-west2`.
 - Vertex AI training uses its own quota, named "Custom model training Nvidia T4 GPUs per region". Serving an endpoint (M5) uses a separate one.
 - If a pipeline asks for a T4 in a region where the quota is 0, the job fails at launch with a quota error.
-- `GCP_REGION` in `.env` must be a region where the quota is above 0. Status on 2026-11-10: not yet checked.
+- `GCP_REGION` in `.env` must be a region where the quota is above 0. Status on 2026-11-10: Dhia confirmed our T4 quota is in `europe-west2`, which is our `GCP_REGION`.
 - To check: Console, IAM & Admin, Quotas & System Limits, filter by that name, look at the "Value" column per region.
 
 **In this course.** Session 1 slide 28 (cloud gives access to GPUs). The GPU task settings (`set_accelerator_type("NVIDIA_TESLA_T4")`) come in Practice 3.
