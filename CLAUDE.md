@@ -8,12 +8,12 @@ Dhia is the project lead (MSc Data for Finance, Mines Paris PSL x Albert School)
 
 ### Working protocol (follow for every milestone and every important step)
 1. **Explain before building.** Plain-language version first (an analogy or picture), then the technical layer.
-2. **Anchor it in the course.** Say which session slide or practice section the step comes from (see section 4), and which other course it builds on (see section 5). Say clearly when a step is NEW (not covered in class).
+2. **Teach each concept in three layers, like a teacher.** (a) Explain it fully in plain terms: what problem it solves, how it works, an analogy. Not a one-line gloss. (b) Where THIS course covers it: exact slide page or practice section, read from the files (see section 4). Say clearly when a step is NEW (not covered in class). (c) Where Dhia saw it before: which course and in what context, with some detail (see section 5). If the content of that other course is unknown, say so and ask; never invent it. When offering a technical choice, explain each option in plain words.
 3. **Propose, then wait.** Show the plan for the step (files to create or change, commands to run) and wait for Dhia's OK. He wants iterative validation before execution.
 4. **Ask before spending money.** Anything that launches a Vertex pipeline with a GPU, deploys an endpoint, or calls a paid API in bulk needs explicit approval. Prefer Dhia running those commands himself.
 5. **Small steps, small commits.** One logical change per commit with a clear message. Git commit history is graded.
 6. **Check the result together.** After each step, show what to look at (like the "Checking the results" sections of the practice guides) and what "good" looks like.
-7. **Log it.** Append an entry to `docs/learning-log.md` (template in section 9).
+7. **Log it.** Append an entry to `docs/learning-log.md` (template in section 9): the chronological story of what we did. Also add or update every concept covered in `docs/concepts.md`: the revision sheet Dhia rereads before the oral and the exam, organised by concept, not by date.
 8. **Visuals help.** Use Mermaid diagrams or small tables in explanations and in the learning log where they make a concept clearer.
 
 ### Style rules
@@ -29,7 +29,8 @@ Dhia is the project lead (MSc Data for Finance, Mines Paris PSL x Albert School)
 
 **Course context:** the course project is "build an end-to-end LLMOps flow (same steps as in the course) adapted to a text generation use case of your design" (Session 1 slides, p.33), with the syllabus framing "AI product team at an ed-tech company building an AI tutor". The project is **no longer shared** with the Data & AI Product course: ignore any joint deliverable.
 
-**Team:** Dhia plus one teammate. Restitution: next week (exact date TBC, update here).
+**Team:** Dhia plus one teammate (GitHub username to confirm, `sjoshi.rgb` was not a valid GitHub login). Team name for resources: **BenJosh**. Restitution: next week (exact date TBC, update here).
+Teacher `MathieuHS` invited as collaborator (write access) on 2026-11-10.
 
 ## 3. Requirements checklist
 
@@ -83,7 +84,9 @@ Dhia's other current courses: **Data Engineering** (pipelines, storage, BigQuery
 
 ## 6. Technical constraints (from the practice guides; keep unless there is a reason)
 - Python **3.11.6**, package manager **uv** (`uv add`, `uv sync`), virtual env in `.venv/`
-- GCP region **europe-west2** (confirm it is where the T4 quota was granted). Bucket naming `team_name-llmops`, multi-regional EU
+- GCP project **`agentics-workflows-510809`**, gcloud configuration named `llmops` (switch back to Data Engineering with `gcloud config configurations activate default`)
+- GCP region **europe-west2** (confirm it is where the T4 quota was granted). Bucket **`gs://benjosh-llmops`** (bucket names must be lowercase), multi-region EU, uniform bucket-level access, created 2026-11-10
+- `.env` is loaded by `python-dotenv` in `src/constants.py`; shell variables win over `.env`
 - Base model: **`microsoft/Phi-3-mini-4k-instruct`** (4k-token context)
 - Fine-tuning approach adapted from https://huggingface.co/blog/dvgodoy/fine-tuning-llm-hugging-face (TRL `SFTTrainer`, PEFT LoRA, BitsAndBytes)
 - Version pins for the Vertex pre-built serving image: **`peft==0.13.2`**, **`transformers==4.46.*`**
@@ -143,7 +146,7 @@ Dhia's other current courses: **Data Engineering** (pipelines, storage, BigQuery
 3. What the CI harness calls without a GPU: a deployed endpoint, the OpenAI API as a stand-in, or recorded predictions plus deterministic checks
 4. Which OpenAI model for the "hard" route and for the judge; which embedding model for the cache
 5. Routing rule: heuristic, embedding classifier, or a cheap LLM call
-6. Confirm GPU quota region and bucket names
+6. Confirm the GPU quota region (Vertex AI quota "Custom model training Nvidia T4 GPUs per region"). Bucket: settled, `benjosh-llmops`
 
 ## 11. Repository layout (target, extends the practice structure)
 ```
@@ -161,6 +164,6 @@ eval/
   triples.jsonl  test_harness.py   # M4
 .github/workflows/eval.yml         # M4
 docs/
-  learning-log.md  product-brief.md  readiness-checklist.md
+  learning-log.md  concepts.md  product-brief.md  readiness-checklist.md
 notebooks/                         # local experiments before componentising
 ```
