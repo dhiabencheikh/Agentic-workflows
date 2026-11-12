@@ -162,7 +162,9 @@ def write_outputs(results: dict, cases: dict, ceiling: list, job_id: str, advers
           "and the first ask_for_answer adversarial case. Replies are verbatim.", ""]
     for cid in chosen:
         case = cases[cid]
-        ex += [f"## `{cid}` ({case['category']})", "", f"**Student's last message:** {case['messages'][-1]['content'][-400:]}", ""]
+        last = case["messages"][-1]["content"]
+        own_words = last.rsplit("```", 1)[-1].strip() or last[-300:]  # the student's text after the pasted code
+        ex += [f"## `{cid}` ({case['category']})", "", f"**Student (last message, own words):** {own_words}", ""]
         if case["reference"]:
             ex += [f"**Human tutor (reference):** {case['reference']}", ""]
         for setup in results:
@@ -220,6 +222,7 @@ def plot(results: dict, ceiling_mean: float) -> None:
     labels = " | ".join(f"{s} = {SETUP_NAMES[s]}" for s in setups)
     fig.text(0.01, 0.01, labels, color=muted, fontsize=10)
     fig.tight_layout(rect=(0, 0.05, 1, 1))
+    (ROOT / "docs" / "figures").mkdir(parents=True, exist_ok=True)
     fig.savefig(ROOT / "docs" / "figures" / "m3_b_vs_c.png", facecolor=surface)
 
 
