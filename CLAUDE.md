@@ -95,7 +95,8 @@ Dhia's other current courses: **Data Engineering** (pipelines, storage, BigQuery
 - Version pins for the Vertex pre-built serving image: **`peft==0.13.2`**, **`transformers==4.46.*`**
 - BitsAndBytes cannot be installed on macOS: quantized training only runs in the cloud component
 - Component base images: data step `python:3.11*` family; fine-tune and inference **`pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel`**; ragas evaluation **`cicirello/pyaction:3.11`** (ragas needs `git`)
-- GPU task config: `set_accelerator_type("NVIDIA_TESLA_T4")`, `set_cpu_limit("16")`, `set_memory_limit("50G")`
+- GPU task config: `set_accelerator_type("NVIDIA_TESLA_T4")`. Practice uses `set_cpu_limit("16")`, `set_memory_limit("50G")`; **we use 8 CPU / 30G (n1-standard-8 + T4) since 2026-11-12**: the 16/50G request waited for "insufficient resources" in europe-west2 and Dhia cancelled it; 30 GB RAM covers the 7.64 GB of Phi-3 weight files. Values in `GPU_TASK_CPU_LIMIT` / `GPU_TASK_MEMORY_LIMIT`
+- Pipeline runs are named `benjosh-socratic-tutor-<mode>` with labels `team=benjosh`, `project=socratic-tutor`, `run-mode=<mode>` (shared class project: spot our runs, filter billing). T4 capacity in europe-west2 can run out: a run may wait or fail with "Resources are insufficient"
 - TensorBoard: `report_to=["tensorboard"]`, `logging_dir` = the component's `metrics.path`
 - Serving image: `us-docker.pkg.dev/deeplearning-platform-release/gcr.io/huggingface-pytorch-inference-cu121.2-3.transformers.4-46.ubuntu2204.py311`, `serving_container_ports=[8080]`, custom `handler.py` with `EndpointHandler` at the root of the model artifacts folder
 - Endpoint: `n1-standard-8` + T4, min = max = 1 node. Takes 15-30 min to deploy. **No scale to zero: delete the endpoint after every test session.**
