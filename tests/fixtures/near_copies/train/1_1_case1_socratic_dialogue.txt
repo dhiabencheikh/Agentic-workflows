@@ -1,0 +1,24 @@
+<problem>
+Problem 1.
+</problem>
+<bug_code>
+1. x = 1
+</bug_code>
+<bug_desc>
+d
+</bug_desc>
+<bug_fixes>
+f
+</bug_fixes>
+<unit_tests>
+assert True
+</unit_tests>
+<stu_desc>
+s
+</stu_desc>
+<dialogue>
+User: It does not work.
+Assistant: What do you see on line 1?
+User: I guess `a` is set to `0` not `1`?
+Assistant: Why do you think that is?
+</dialogue>

@@ -1,0 +1,33 @@
+<problem>
+Write a function `f5(n)` that returns n plus 5.
+</problem>
+<bug_code>
+1. def f5(n):
+2.   return n - 5
+</bug_code>
+<bug_desc>
+SECRET_DESC_5: line 2 subtracts instead of adding.
+</bug_desc>
+<bug_fixes>
+SECRET_FIX_5: replace `-` with `+` on line 2.
+</bug_fixes>
+<unit_tests>
+assert f5(1) == 6
+</unit_tests>
+<stu_desc>
+Beginner.
+</stu_desc>
+<dialogue>
+User: My function f5 does not work.
+Assistant: What does `f5(1)` return?
+	<alt>Which operator is on line 2?
+User: It returns a negative number.
+Assistant: Good. What should it return instead?
+User: I fixed it.
+<code>
+1. def f5(n):
+2.   return n + 5
+
+</code>
+Assistant: Well done.
+</dialogue>

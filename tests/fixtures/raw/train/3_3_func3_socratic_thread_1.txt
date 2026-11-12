@@ -1,0 +1,35 @@
+<problem>
+Write a function `f3(n)` that returns n plus 3.
+</problem>
+<bug_code>
+1. def f3(n):
+2.   return n - 3
+</bug_code>
+<bug_desc>
+SECRET_DESC_3: line 2 subtracts instead of adding.
+</bug_desc>
+<bug_fixes>
+SECRET_FIX_3: replace `-` with `+` on line 2.
+</bug_fixes>
+<unit_tests>
+assert f3(1) == 4
+</unit_tests>
+<stu_desc>
+Beginner.
+</stu_desc>
+<dialogue>
+User: My function f3 does not work.
+Assistant: What does `f3(1)` return?
+	<alt>Which operator is on line 2?
+User: It returns a negative number.
+Assistant: Can you print the result on line 2?
+User: OK.
+Assistant: Good. What should it return instead?
+User: I fixed it.
+<code>
+1. def f3(n):
+2.   return n + 3
+
+</code>
+Assistant: Well done.
+</dialogue>

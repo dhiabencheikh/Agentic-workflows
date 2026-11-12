@@ -1,0 +1,37 @@
+<problem>
+Return the last index of `value` in `array`, or -1.
+</problem>
+<bug_code>
+1. def last(value, array):
+2.   for i in range(len(array)-1, -1):
+3.     if array[i] == value:
+4.       return i
+5.   return -1
+</bug_code>
+<bug_desc>
+The range has no -1 step.
+</bug_desc>
+<bug_fixes>
+Add a -1 step to the range on line 2.
+</bug_fixes>
+<unit_tests>
+assert last(1, [1, 1]) == 1
+</unit_tests>
+<stu_desc>
+Beginner.
+</stu_desc>
+<dialogue>
+User: My function returns -1 every time.
+Assistant: What would you need to do in the code to fix that?
+<code>
+1. def last(value, array):
+2.   for i in range(len(array)-1, -1, -1):
+3.     if array[i] == value:
+4.       return i
+5.   return -1
+
+</code>
+User: I need to add a -1 step!
+Assistant: Does it pass all the test cases?
+User: Yes! Thank you!
+</dialogue>

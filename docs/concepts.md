@@ -22,6 +22,14 @@ Each entry has the same parts:
 | 5 | [Smoke test (setup validation)](#5-smoke-test-setup-validation) | M0 | Session 1 slide 27, Practice 1 section 3 |
 | 6 | [Git branches and small commits](#6-git-branches-and-small-commits) | M0 | Session 1 slide 22 |
 | 7 | [GPU quota](#7-gpu-quota) | M0 (used in M2) | Session 1 slide 28 |
+| 8 | [SFT training example and chat template](#8-sft-training-example-and-chat-template) | M1 | Session 2 slides 16-19, 21, 24 |
+| 9 | [One dialogue becomes many examples](#9-one-dialogue-becomes-many-examples) | M1 | NEW |
+| 10 | [Data leakage and splitting by problem](#10-data-leakage-and-splitting-by-problem) | M1 | Practice 2 section 1.4, Session 3 |
+| 11 | [Tokens and the context window](#11-tokens-and-the-context-window) | M1 | Session 2 slide 23 |
+| 12 | [Kubeflow component, artifact, pipeline, job](#12-kubeflow-component-artifact-pipeline-job) | M1 | Session 2 slides 4-14, 25 |
+| 13 | [Data cleaning: deduplication and attribution](#13-data-cleaning-deduplication-and-attribution) | M1 | Session 2 slide 22 |
+| 14 | [Prompt versioning and prompt drift](#14-prompt-versioning-and-prompt-drift) | M1 (used in M3-M7) | Syllabus LO5, Session 1 slides 18, 20 |
+| 15 | [Pinning the model revision](#15-pinning-the-model-revision) | M1 (used in M2-M5) | Session 1 slide 21 |
 
 ---
 
@@ -218,4 +226,206 @@ It is not about where data is stored (that is the bucket location). It is about 
 **Check yourself.** The bucket is in `EU`. Does that mean training can run in any EU region?
 <details><summary>Answer</summary>
 No. The bucket location is about storage. Training runs where the GPU quota exists and where `GCP_REGION` points. An EU multi-region bucket can be read from any EU region.
+</details>
+
+---
+
+## 8. SFT training example and chat template
+
+**In plain words.**
+Fine-tuning is learning from worked examples: "in this situation, a good answer is this".
+The model reads the situation and tries to predict the answer token by token; each wrong prediction gives a small correction to its weights.
+Show it hundreds of examples of a tutor asking instead of telling, and it picks up the habit.
+
+**How it works.**
+- One example is a list of messages with a role (`system`, `user`, `assistant`) and text.
+- The **chat template** turns that list into one string with the special markers the model was trained with. For Phi-3: `<|system|>...<|end|>`, `<|user|>...<|end|>`, `<|assistant|>...<|end|>`, then `<|endoftext|>`.
+- At inference, `add_generation_prompt=True` ends the string with `<|assistant|>` so the model writes the next tutor turn.
+- Our data step outputs messages (model-agnostic). The template is applied by the tokenizer in fine-tuning (model-specific).
+- Checked on 2026-11-12 at revision `f39ac1d`: the Phi-3 template keeps the `<|system|>` block, so the system prompt reaches the model.
+
+**In this course.** Session 2 slides 16-19 (base model, instruct model, SFT as "expected input-output pairs"), slide 21 (keep the original format and tokenizer), slide 24 (Phi-3 template). Practice 2 section 1.3.
+
+**Seen before.** Generative AI I (next-token prediction, syllabus). Neural Networks (backpropagation: the "small correction"). Exact models and datasets used there: to confirm.
+
+**In our repo.** `build_examples` in [data_transformation_component.py](../src/pipeline_components/data_transformation_component.py); template check in [01_explore_dataset.py](../notebooks/01_explore_dataset.py).
+
+**Check yourself.** Why must the fine-tuning data use Phi-3's own markers rather than, say, "Student:" and "Tutor:"?
+<details><summary>Answer</summary>
+Phi-3-instruct was already trained to follow conversations written with its own markers. Other markers look like a different format, so we would partly re-teach the format instead of only the tutoring behaviour, and the served model (which receives Phi-3 markers) would see a format it was not fine-tuned on.
+</details>
+
+---
+
+## 9. One dialogue becomes many examples
+
+**In plain words.**
+A conversation is cut into flashcards. Front: the conversation so far. Back: the tutor's next line.
+In the app the model always faces the front of a card, so training and test cards look exactly like real use.
+
+**How it works.**
+- For each tutor turn: input = system prompt + (problem + buggy code + first student message) + all later turns before it; target = that tutor turn.
+- Raw counts (`docs/results/m1_dataset_stats.md`): 815 tutor turns in `train/`, 92 in `testset/`. After deduplication: train 566, validation 99, test 80.
+- Test cards are also the base of the M3 comparison and of M4 triples.
+
+**In this course.** NEW: the Yoda practice was single-turn (one sentence in, one out).
+
+**Seen before.** Building supervised samples from a sequence with a sliding window (e.g. time series forecasting): to confirm in which course.
+
+**Check yourself.** Why not train on whole dialogues and test on whole dialogues?
+<details><summary>Answer</summary>
+The app produces one tutor message at a time from the conversation so far. Cards in that shape let us feed the same input to the base and fine-tuned models and compare one reply each, which a whole-dialogue format does not give directly.
+</details>
+
+---
+
+## 10. Data leakage and splitting by problem
+
+**In plain words.**
+An exam built from last week's homework with names changed: memorising gets 100% without understanding.
+If cards from the same conversation land in both train and test, the test score says nothing about a new student's new bug.
+
+**How it works.**
+- Hierarchy: problem > conversation files > cards. All cards of a problem go to one split.
+- Test = the authors' `testset/` (4 problems). Validation = 4 of the 34 train problems, drawn with seed 42 (problems 1, 9, 18, 20).
+- The component raises an error if a problem appears in two splits.
+- Validation is for watching over-fitting during training (M2); test is touched only for the final comparison (M3).
+- The teacher's `train_test_split(test_size=0.1)` splits by row: fine for independent Yoda sentences, leaky for dialogues.
+- Limit to state at the oral: 4 test problems and 80 cards is small; differences of a few points can be chance.
+
+**In this course.** Practice 2 section 1.4 (`train_test_split`). Validation and over-fitting: Session 3 (exact slide to cite in M2).
+
+**Seen before.** Train/test splits and grouped splits (scikit-learn `GroupKFold`) in an earlier ML course; look-ahead bias in finance backtests. Which course: to confirm.
+
+**In our repo.** End of [data_transformation_component.py](../src/pipeline_components/data_transformation_component.py); test `test_no_problem_is_shared_between_splits`.
+
+**Check yourself.** A random 90/10 split by card gives a much better test score than the split by problem. Which number do you report, and why?
+<details><summary>Answer</summary>
+The split by problem. With a random split, cards of the same conversation are in train and test, so the model is tested on bugs and dialogues it has seen: the higher score measures memorisation, not generalisation to a new student's code.
+</details>
+
+---
+
+## 11. Tokens and the context window
+
+**In plain words.**
+The model reads tokens (chunks of words mapped to numbers), not letters. Phi-3-mini-4k can look at 4,096 tokens at once.
+Every card (prompt + problem + code + history + reply) must fit, or the start gets cut off.
+
+**How it works.**
+- Lengths must be measured with the model's own tokenizer and chat template; a word count is not enough.
+- Measured on 2026-11-12 (prompt v1.0.0, revision `f39ac1d`): longest card 2,066 tokens, 0 cards over 4,096. The prompt alone is 120 tokens.
+- Tutor replies are short: median 13 to 21 tokens depending on the split.
+- If cards were too long, the fix would be trimming or summarising the middle of the history (LO7, context compression).
+
+**In this course.** Session 2 slide 23 (tokenization, "use the same tokenizer as the base model"). Session 1 slide 12.
+
+**Seen before.** Generative AI I (self-attention compares every token with every other, hence a fixed window). Neural Networks museum-guide project (embeddings start from tokens).
+
+**Check yourself.** Why did we measure lengths before training rather than after a failed run?
+<details><summary>Answer</summary>
+Too-long cards are silently truncated by the trainer, cutting the problem statement or code. Measuring first (cheap, on a laptop) tells us whether trimming is needed before paying for GPU time.
+</details>
+
+---
+
+## 12. Kubeflow component, artifact, pipeline, job
+
+**In plain words.**
+A pipeline is an assembly line. Each component is a workstation that takes inputs, does one job, and puts outputs in labelled boxes (artifacts) in the bucket.
+Vertex AI runs each workstation on a rented machine and draws the line in the console.
+
+**How it works.**
+- `@component(base_image=..., packages_to_install=[...])` packages a function to run in a container; all imports must be inside the function.
+- `OutputPath("Dataset")` declares an output file; Vertex picks its location under the pipeline root in the bucket.
+- `@pipeline` wires components; `pipeline_runner.py` compiles to JSON and submits a `PipelineJob` with parameter values.
+- `component.python_func` is the plain function behind a component: our tests and notebook call it locally, so they test the exact code Vertex runs.
+- Our data component has 5 inputs (raw data URI, system prompt, prompt version, number of validation problems, seed) and 3 outputs (train, validation, test JSONL).
+- Slide 25: keep model-agnostic steps (parsing, cleaning) apart from model-specific ones (template, tokens).
+
+**In this course.** Session 2 slides 4-14 (Kubernetes, Kubeflow, component, artifact, pipeline, job, Vertex), slide 25. Practice 2 sections 2 and 3. Session 1 slides 15-16 (orchestration).
+
+**Seen before.** Data Engineering pipelines as DAGs of steps (tool used there, e.g. Airflow: to confirm).
+
+**Check yourself.** The component needs `re` and `fsspec`. Why are they imported inside the function and not at the top of the file?
+<details><summary>Answer</summary>
+Kubeflow ships only the function's source code to a fresh container. Imports at the top of the file are not part of that source, so the function would fail on Vertex with a NameError.
+</details>
+
+---
+
+## 13. Data cleaning: deduplication and attribution
+
+**In plain words.**
+"A soup is only as good as its ingredients": look at the data. Two problems found by looking:
+1. Some flashcards were printed several times (thread files repeat the dialogue's opening, sometimes with only formatting changes). Copies get extra weight in training and in the test score.
+2. In 8 train files, a student's corrected function sat right after a tutor line. Our first parser gave it to the tutor, so 7 training targets taught the tutor to output corrected code: the exact behaviour we forbid.
+
+**How it works.**
+- Exact dedup removed 136 train-folder cards (815 to 679) and 9 testset cards (92 to 83).
+- Normalised dedup compares all messages after ignoring spacing, backticks and end-of-word `, . ! ? ; :`. It keeps letter case, operators and in-word punctuation, because code is case-sensitive and `n - 1`, `n + 1`, `1.5`, `15` differ. It removed 14 more (679 to 665) and 3 more (83 to 80). Checked: no merged group differed in letter case.
+- Fuzzy matching (similarity threshold) was rejected: at a 95% threshold it would remove 30 more cards than exact matching (measured before the attribution fix), including cards whose earlier conversation really differs, with an arbitrary threshold.
+- Copies are always within one problem, hence within one split: dedup is about weighting, not leakage.
+- Attribution fix: a `<code>` block after a tutor line goes to the next student turn. After the fix, 0 tutor targets contain a code block, and the longest validation target fell from 223 to 49 tokens.
+
+**In this course.** Session 2 slide 22 (data cleaning, "look at your data"). Deduplication itself: NEW.
+
+**Seen before.** pandas `drop_duplicates()`, SQL `SELECT DISTINCT` (Data Engineering: to confirm). This is the same idea with a looser definition of "same".
+
+**In our repo.** `parse_dialogue`, `comparison_key`, `deduplicate` in [data_transformation_component.py](../src/pipeline_components/data_transformation_component.py); tests `test_code_block_after_a_tutor_line_goes_to_the_next_student_turn`, `test_near_copies_merge_only_on_formatting_differences`.
+
+**Check yourself.** Why does lowercasing everything for dedup carry a risk on this dataset, even if it merged nothing extra here?
+<details><summary>Answer</summary>
+Python is case-sensitive: `Total` and `total` are different variables. Two cards differing only in such a name may describe different code, and merging them would delete a real example. We therefore keep case.
+</details>
+
+---
+
+## 14. Prompt versioning and prompt drift
+
+**In plain words.**
+The system prompt is part of the product, like code. If it changes, the product changes, and old test results describe a product that no longer exists.
+So it gets a version number, one file per version, and every result says which version it used.
+
+**How it works.**
+- Single source of truth: `prompts/tutor_system_v1.0.0.txt`, loaded by `src/prompts.py`. Vertex components receive it as a pipeline parameter; the handler gets the file copied next to it; local apps import it. A guard test fails if the text is pasted into code.
+- Semantic versioning, MAJOR.MINOR.PATCH (as in `pandas 2.3.3`, concept 1):
+  - MAJOR: promised behaviour changes (e.g. tutor may give fixes): rebuild data, retrain, re-evaluate.
+  - MINOR: instruction added, old ones kept: rebuild data, retrain, re-evaluate.
+  - PATCH: wording only: re-evaluate.
+- Why a change invalidates past evaluation: a score measures model + prompt + generation settings + test cards together; LLMs are sensitive to wording; and here the prompt is inside every training card, so serving a different prompt creates a gap between training and serving.
+- Every card stores `prompt_version`; scores are compared only within one version.
+- The prompt's rules on asking for the answer, injection and off-topic have NO training examples: that behaviour comes only from the prompt and is tested explicitly in M4.
+
+**In this course.** Syllabus topic "semantic-versioning conventions for prompts; how prompt drift invalidates prior evaluation results" and learning outcome 5. Session 1 slides 18 and 20 (experiment tracking and registry should also store prompts). Not in the practice guides: NEW in implementation.
+
+**Seen before.** Version numbers of packages in `uv.lock` (concept 1). Semantic versioning in software: possibly MSA-DATI07-01, to confirm.
+
+**In our repo.** [prompts/](../prompts/), [src/prompts.py](../src/prompts.py), [tests/test_prompts.py](../tests/test_prompts.py).
+
+**Check yourself.** You fix a typo in the prompt (v1.0.1). Can you keep last week's evaluation score in your report as the current one?
+<details><summary>Answer</summary>
+No. The score was measured with v1.0.0. Even a wording change can change outputs, so the system must be re-evaluated with v1.0.1 and the report must state which version each score belongs to.
+</details>
+
+---
+
+## 15. Pinning the model revision
+
+**In plain words.**
+`microsoft/Phi-3-mini-4k-instruct` is a name, not a fixed object: Microsoft can push new weights or a new chat template under the same name.
+Pinning a revision is like citing a book's edition and page instead of just its title.
+
+**How it works.**
+- A Hugging Face repository is a Git repository; every change has a commit hash.
+- We pin `BASE_MODEL_REVISION = f39ac1d...` (head of `main` on 2026-11-12, last modified 2025-12-10) in `src/constants.py`.
+- `from_pretrained(BASE_MODEL_ID, revision=BASE_MODEL_REVISION)` must be used for both tokenizer and weights in every step: data checks, fine-tuning, inference, serving.
+
+**In this course.** Session 1 slide 21 ("items that need to match between environments: code and data (model weights)..."). The pins `peft==0.13.2` and `transformers==4.46.*` follow the same logic for libraries.
+
+**Seen before.** Lock files and package pins (concept 1); dataset provenance by commit (`3f77f89`, README).
+
+**Check yourself.** The fine-tuning step loads Phi-3 without a revision, serving loads it with one. What can go wrong?
+<details><summary>Answer</summary>
+If `main` changed between the two, the LoRA adapter would be trained on one set of base weights (or template) and applied to another. The adapter's learned corrections assume the original weights, so quality can drop silently.
 </details>

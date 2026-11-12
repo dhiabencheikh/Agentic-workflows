@@ -85,6 +85,11 @@ TODO (M7)
 We use the Socratic Debugging Benchmark (`v2_sigcse`):
 https://github.com/taisazero/socratic-debugging-benchmark
 
+Provenance of our copy:
+- Source commit: `3f77f89` (2024-03-22), folders `socratic_debugging_benchmark/v2_sigcse/train` (134 files) and `testset` (16 files)
+- Uploaded unchanged on 2026-11-12 to `gs://benjosh-llmops/raw/socratic_debugging_benchmark/v2_sigcse/` (150 files, 606,236 bytes)
+- The authors' train/testset split is kept as is: the two sets share no problem
+
 The repository has no license file, so we treat it as academic research data and cite the authors:
 
 - Erfan Al-Hossami, Razvan Bunescu, Ryan Teehan, Laurel Powell, Khyati Mahajan, Mohsen Dorodchi. 2023.
