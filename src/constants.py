@@ -45,6 +45,11 @@ FINE_TUNING_HYPERPARAMETERS: dict = {
     "lora_target_modules": ["o_proj", "qkv_proj", "gate_up_proj", "down_proj"],
     # Training (Session 3 slide 12)
     "learning_rate": 3e-4,
+    # Schedule made explicit (teacher feedback, 2026-11-12). These are the values the M2 full run
+    # used implicitly (transformers 4.46 defaults): full LR from update 1, linear decay to 0.
+    # Next run: a warm-up (e.g. warmup_ratio 0.1) and 2 epochs, chosen deliberately.
+    "lr_scheduler_type": "linear",
+    "warmup_ratio": 0.0,
     "num_train_epochs": 3,
     "per_device_train_batch_size": 2,
     "gradient_accumulation_steps": 8,  # effective batch = 2 x 8 = 16 cards per update
