@@ -163,3 +163,20 @@ def test_stop_tokens_in_generation_parameters_are_phi3_turn_markers():
 def test_generation_without_stop_tokens_is_refused(tmp_path, tiny_model_dir):
     with pytest.raises(ValueError, match="eos_token_id"):
         run(tmp_path, tiny_model_dir, "a", generation={"max_new_tokens": 5, "do_sample": False})
+
+
+def test_phase_timings_are_recorded_in_the_predictions_metadata(tmp_path, tiny_model_dir):
+    out = Dataset(uri=str(tmp_path / "p.jsonl"))
+    cards = tmp_path / "cards.jsonl"
+    cards.write_text(json.dumps(m1_card(0)))
+    inference_component.python_func(
+        test_dataset=Dataset(uri=str(cards)), setup="a", base_model_id=str(tiny_model_dir),
+        base_model_revision=BASE_MODEL_REVISION, system_prompt=PROMPT, prompt_version=TUTOR_PROMPT_VERSION,
+        generation=GENERATION, extra_cases_uri="", max_cases=0, predictions=out,
+    )
+    timings = out.metadata["timings_seconds"]
+    assert out.metadata["error_rate"] == 0.0
+    for key in ("model_load", "inference", "generation_only", "save"):
+        assert timings[key] >= 0, key
+    marks = list(timings["marks_since_function_start"].values())
+    assert marks == sorted(marks)

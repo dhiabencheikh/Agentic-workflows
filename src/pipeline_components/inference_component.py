@@ -55,6 +55,12 @@ def inference_component(
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
+    function_start = time.time()  # after pip install: Kubeflow installs packages before calling us
+    marks = {}
+
+    def mark(name: str) -> None:
+        marks[name] = round(time.time() - function_start, 1)
+
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 
@@ -117,6 +123,8 @@ def inference_component(
         model = PeftModel.from_pretrained(model, adapter.path)
         adapter_uri = adapter.uri
     model.eval()
+    mark("model_ready")
+    logger.info(f"Model ready: setup {setup}, adapter {'yes' if setup == 'c' else 'no'}, GPU {on_gpu}")
 
     # Decoding comes entirely from `generation` (GENERATION_PARAMETERS), stop tokens included,
     # so evaluation and serving use one definition.
@@ -164,14 +172,27 @@ def inference_component(
             record["error"] = f"{type(error).__name__}: {error}"
             logger.exception(f"Case {case['id']} failed")
         records.append(record)
+    mark("inference_done")
+    logger.info(f"Inference done: setup {setup}, {len(records)} cases")
 
     os.makedirs(os.path.dirname(predictions.path) or ".", exist_ok=True)
     with open(predictions.path, "w", encoding="utf-8") as file:
         for record in records:
             file.write(json.dumps(record, ensure_ascii=False) + "\n")
+    mark("saved")
     errors = sum(r["error"] is not None for r in records)
+    timings = {
+        "marks_since_function_start": marks,
+        "model_load": marks["model_ready"],
+        "inference": round(marks["inference_done"] - marks["model_ready"], 1),
+        "generation_only": round(sum(latencies), 1),
+        "save": round(marks["saved"] - marks["inference_done"], 1),
+        "note": "pip install, image pull and provisioning happen before this function: see Cloud Logging",
+    }
     predictions.metadata.update({"setup": setup, "cases": len(records), "errors": errors,
-                                 "prompt_version": None if setup == "a" else prompt_version})
+                                 "error_rate": errors / max(len(records), 1),
+                                 "prompt_version": None if setup == "a" else prompt_version,
+                                 "timings_seconds": timings})
     logger.info(
         f"Setup {setup}: {len(records)} predictions, {errors} errors, "
         f"median latency {statistics.median(latencies) if latencies else 0:.2f} s -> {predictions.path}"
