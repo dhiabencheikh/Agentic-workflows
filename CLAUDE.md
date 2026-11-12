@@ -84,7 +84,8 @@ Dhia's other current courses: **Data Engineering** (pipelines, storage, BigQuery
 
 ## 6. Technical constraints (from the practice guides; keep unless there is a reason)
 - Python **3.11.6**, package manager **uv** (`uv add`, `uv sync`), virtual env in `.venv/`
-- GCP project **`agentics-workflows-510809`**, gcloud configuration named `llmops` (switch back to Data Engineering with `gcloud config configurations activate default`)
+- GCP project **`agentics-workflows-510809`** is **shared by the whole class** (checked 2026-11-12: 20 buckets, other teams' pipelines, teacher bucket `msoul-llmops`). Any project editor can read, overwrite or delete objects in our bucket: never store secrets there, verify artifacts before use. The T4 quota is per project and region, so it is shared with other teams: GPU jobs may queue. Never touch other teams' buckets or jobs
+- gcloud configuration named `llmops` (switch back to Data Engineering with `gcloud config configurations activate default`)
 - GCP region **europe-west2**: Dhia confirmed on 2026-11-10 that the T4 quota was granted there. Bucket **`gs://benjosh-llmops`** (bucket names must be lowercase), multi-region EU, uniform bucket-level access, created 2026-11-10
 - `.env` is loaded by `python-dotenv` in `src/constants.py`; shell variables win over `.env`
 - Base model: **`microsoft/Phi-3-mini-4k-instruct`** (4k-token context), pinned to Hugging Face revision **`f39ac1d`** (`BASE_MODEL_ID` and `BASE_MODEL_REVISION` in `src/constants.py`). Load weights AND tokenizer with this exact pair everywhere: data checks, fine-tuning, inference, serving
