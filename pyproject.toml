@@ -16,3 +16,14 @@ dependencies = [
     "pandas>=2.3.3",
     "python-dotenv>=1.2.4",
 ]
+
+[dependency-groups]
+dev = [
+    "jinja2>=3.1.6",
+    "pytest>=9.2.0",
+    "transformers==4.46.*",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
