@@ -21,6 +21,11 @@
    LANGFUSE_HOST=http://localhost:3000
    ```
 4. Restart the app: `uv run chainlit run src/app/main.py`. Each student message creates one trace.
+   **Trap:** the Langfuse UI shows `LANGFUSE_BASE_URL`, but SDK 3.15 reads `LANGFUSE_HOST`. Without
+   `LANGFUSE_HOST`, the SDK sends traces to Langfuse's cloud, not to the local server: keep both lines.
+5. Checked on 2026-11-12 at 22:49 UTC: one live request produced span `tutor-turn` + generation
+   `endpoint-generation` (model name, usage 200 input / 13 output tokens, 1.2 s, level DEFAULT) in the local
+   Langfuse. Langfuse v4 has no trace-reading API (`events_only` mode): traces are read in the UI.
 
 ## 3. What is logged (`src/app/tracing.py`)
 
