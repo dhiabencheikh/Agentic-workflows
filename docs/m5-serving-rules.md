@@ -39,6 +39,19 @@ The handler reads `serving_config.json` and the prompt file from its model folde
 - [ ] On 5 M3 test cases, the endpoint's replies equal the M3 setup c predictions (same system end to end).
 - [ ] The endpoint is deleted at the end of every session; record start and delete times for the cost model.
 
+## Commands (registered model, 2026-11-12)
+
+The model is registered once: `projects/123905721265/locations/europe-west2/models/5118624650506534912`
+(version 1, adapter from run `benjosh-socratic-tutor-20261112182647`, prompt v1.0.0). Do not re-register to redeploy.
+
+| Step | Command |
+|---|---|
+| Redeploy (new endpoint, 15 to 30 min when a T4 is free) | `uv run --no-dev python -m scripts.deploy_endpoint --model projects/123905721265/locations/europe-west2/models/5118624650506534912` |
+| Point the app to it | put the printed `GCP_ENDPOINT_ID=...` in `.env` |
+| Quick test | `uv run --no-dev python -c "from src.app.endpoint_client import TutorEndpoint; print(TutorEndpoint().reply([{'role': 'user', 'content': 'My factorial returns 0 for every n.'}]))"` |
+| Demo app | `uv run --no-dev chainlit run src/app/main.py` |
+| **Delete after use** (stops the hourly billing) | `uv run --no-dev python -m scripts.delete_endpoint --endpoint <GCP_ENDPOINT_ID>` |
+
 ## Access needed (check with Dhia)
 
 `roles/aiplatform.user` (register model, create, deploy, undeploy, delete endpoint, predict),
