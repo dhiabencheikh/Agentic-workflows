@@ -21,6 +21,7 @@ else:
     from src.app.endpoint_client import TutorEndpoint
     from src.app.tracing import traced_reply, tracing_enabled
     from src.constants import REGION
+    from src.guardrail import SAFE_REPLY, check_input
 
     LANGFUSE = None
     if tracing_enabled():
@@ -56,6 +57,15 @@ async def on_message(message: cl.Message) -> None:
         await cl.Message(content=render(data, message.content) + "\n\n---\n" + menu(data)).send()
         return
     history = cl.user_session.get("history")
+    guard = check_input(message.content)
+    if guard["blocked"]:  # prompt-injection guardrail: the model is not called
+        if LANGFUSE:
+            with LANGFUSE.start_as_current_span(name="guardrail-block", input=message.content,
+                                                output=SAFE_REPLY, metadata=guard):
+                pass
+            LANGFUSE.flush()
+        await cl.Message(content=SAFE_REPLY).send()
+        return
     history.append({"role": "user", "content": message.content})
     try:
         endpoint = cl.user_session.get("endpoint")
