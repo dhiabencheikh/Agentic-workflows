@@ -2,13 +2,14 @@
 
 from kfp.dsl import pipeline
 
+from src.constants import GPU_TASK_CPU_LIMIT, GPU_TASK_MEMORY_LIMIT, PIPELINE_NAME
 from src.pipeline_components.data_transformation_component import (
     data_transformation_component,
 )
 from src.pipeline_components.fine_tuning_component import fine_tuning_component
 
 
-@pipeline()
+@pipeline(name=PIPELINE_NAME)
 def model_training_pipeline(
     raw_dataset_uri: str,
     system_prompt: str,
@@ -42,5 +43,5 @@ def model_training_pipeline(
     )  # type: ignore
     fine_tuning_task.set_accelerator_type("NVIDIA_TESLA_T4")
     fine_tuning_task.set_accelerator_limit(1)
-    fine_tuning_task.set_cpu_limit("16")
-    fine_tuning_task.set_memory_limit("50G")
+    fine_tuning_task.set_cpu_limit(GPU_TASK_CPU_LIMIT)
+    fine_tuning_task.set_memory_limit(GPU_TASK_MEMORY_LIMIT)

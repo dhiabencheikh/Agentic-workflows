@@ -15,6 +15,8 @@ from src.constants import (
     BASE_MODEL_REVISION,
     FINE_TUNING_HYPERPARAMETERS,
     NUM_VALIDATION_PROBLEMS,
+    PIPELINE_LABELS,
+    PIPELINE_NAME,
     PIPELINE_ROOT_PATH,
     PROJECT_ID,
     RAW_DATASET_URI,
@@ -32,13 +34,14 @@ if __name__ == "__main__":
 
     aiplatform.init(project=PROJECT_ID, location=REGION)
 
-    pipeline_name = "model_training_pipeline"
+    pipeline_name = PIPELINE_NAME
     compiler.Compiler().compile(
         pipeline_func=model_training_pipeline,  # type: ignore
         package_path=f"{pipeline_name}.json",
     )
     job = aiplatform.PipelineJob(
         display_name=f"{pipeline_name}-{mode['name']}",
+        labels={**PIPELINE_LABELS, "run-mode": mode["name"]},
         template_path=f"{pipeline_name}.json",
         pipeline_root=f"gs://{PIPELINE_ROOT_PATH}",
         enable_caching=True,  # reuse the data step output when its inputs are unchanged

@@ -56,6 +56,19 @@ FINE_TUNING_HYPERPARAMETERS: dict = {
     "seed": 42,
 }
 
+# Pipeline identity: job ids become "benjosh-socratic-tutor-<timestamp>" and display names
+# "benjosh-socratic-tutor-<mode>", easy to spot in the class's shared project. The labels
+# are attached to every run, to filter our runs (and their cost) in the console and billing.
+PIPELINE_NAME: str = "benjosh-socratic-tutor"
+PIPELINE_LABELS: dict = {"team": "benjosh", "project": "socratic-tutor"}
+
+# GPU machine for fine-tuning: n1-standard-8 (8 vCPU, 30 GB) + 1 T4, smaller than the
+# practice's 16 CPU / 50G. Reason: on 2026-11-12 the n1-standard-16 + T4 request waited
+# for "insufficient resources" in europe-west2. 30 GB RAM is enough: all Phi-3 weight
+# files together are 7.64 GB (revision f39ac1d), and data is a few MB.
+GPU_TASK_CPU_LIMIT: str = "8"
+GPU_TASK_MEMORY_LIMIT: str = "30G"
+
 # Pipeline run modes (scripts/pipeline_runner.py --mode ...)
 # smoke: a short paid GPU test on the LONGEST training cards (worst case for memory),
 #        to check that training fits on a T4 and to measure seconds per step before a full run.
