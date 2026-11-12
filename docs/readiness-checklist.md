@@ -27,8 +27,8 @@ evaluated as setup c in run `benjosh-socratic-eval-20261112215631` on n1-standar
 |---|---|---|---|---|---|---|
 | 9 | Inference errors | failed / total generations | `error` field of the predictions | 0 / 106 (`eval/thresholds.json`) | 0 / 106 (b and c) | PASS |
 | 10 | Generation latency | P95 seconds per reply, generation only | `latency_seconds` in the M3 predictions (T4, one request at a time) | <= 5 s (*draft*) | 2.7 s (median 1.5 s) | PASS |
-| 11 | End-to-end latency | P95 round trip app -> endpoint -> app | Langfuse traces or `round_trip_seconds` of the client | <= 5 s (*draft*) | no endpoint measured yet | NOT MEASURED |
-| 12 | Endpoint availability | endpoint deploys and answers before a demo | `scripts/deploy_endpoint.py` + quick test | deployed and answering 60 min before the demo (*draft*) | first deploy 2026-11-12 21:34 UTC: `503 Machine type temporarily unavailable` (no T4 in europe-west2); retry in progress | NOT MET YET |
+| 11 | End-to-end latency | P95 round trip app -> endpoint -> app | Langfuse traces or `round_trip_seconds` of the client | <= 5 s (*draft*) | 3.8 s then 1.5 s on the first two requests (2026-11-12, `round_trip_seconds`); too few calls for a P95 | NOT MEASURED (sample too small) |
+| 12 | Endpoint availability | endpoint deploys and answers before a demo | `scripts/deploy_endpoint.py` + quick test | deployed and answering 60 min before the demo (*draft*) | first deploy 21:34 UTC: `503 Machine type temporarily unavailable`; retry deployed at 21:51 UTC (endpoint `298550392290017280`), answering | PASS on 2026-11-12 (to repeat on the morning of the demo) |
 | 13 | GPU wait risk | wait for a GPU at job start | `scripts/pipeline_job_report.py` | documented fallback (*draft*) | waits of 20.9 min (M3 setup b), 7.3 min (M2 full), about 1 h (M2 first smoke, cancelled); fallbacks: europe-west4 T4, europe-west2 L4, replay mode | PASS (fallbacks exist) |
 
 ## Reproducibility and change control
@@ -38,6 +38,7 @@ evaluated as setup c in run `benjosh-socratic-eval-20261112215631` on n1-standar
 | 14 | Pinned model | base model revision fixed everywhere | `BASE_MODEL_REVISION` in `src/constants.py`; `serving_config.json` | one revision | `f39ac1d` in training, evaluation, serving | PASS |
 | 15 | Prompt and decoding versioned | prompt version + generation dict on every prediction | predictions records, `src/serving_contract.py` | present on 100% of predictions | 212 / 212 predictions carry prompt v1.0.0 and the generation dict | PASS |
 | 16 | Data leakage | problems shared between train, validation, test | data component check (raises on overlap) | 0 | 0 (component would fail otherwise) | PASS |
+| 16b | Served = evaluated | endpoint replies equal the M3 setup c replies | 5 M3 test cases sent to the endpoint, compared verbatim | 5 / 5 identical | 5 / 5 identical (2026-11-12) | PASS |
 | 17 | Tests and CI | unit tests + harness gate on every push | GitHub Actions (`eval.yml`) | green | green on PR #9 (tests + gate on recorded predictions) | PASS |
 
 ## Operations and cost

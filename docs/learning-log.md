@@ -247,3 +247,7 @@ Recorded for later milestones (CLAUDE.md section 8): M3 three setups (base witho
 **What we ran:** registration (`projects/123905721265/locations/europe-west2/models/5118624650506534912`), deployment to endpoint `298550392290017280`: `503 Machine type temporarily unavailable` at 21:34 UTC. Retries added to the deploy script; fallbacks prepared (europe-west4 T4, europe-west2 L4, replay mode of recorded replies).
 
 **Problems hit and fixes:** the Chainlit app could not import `src` when started by Chainlit (fixed, both modes checked to serve HTTP 200); tests needing torch failed in a no-dev environment, which would have turned CI red after merging (now skipped with a stated reason; clean no-dev run 86 passed, 4 skipped).
+
+## 2026-11-12 · M5 · Endpoint deployed and checked
+
+**Result:** retry deployed the registered model to endpoint `298550392290017280` (attempt started 21:35:12, deployed 21:51:14 UTC, n1-standard-8 + T4, europe-west2). Quick test: a Socratic reply without the fix ("Sure. Can you explain what the for loop is doing?"), prompt v1.0.0, identical on two identical requests, round trip 3.8 s then 1.5 s. On 5 M3 test cases the endpoint's replies were **identical, word for word, to the M3 setup c predictions**: the served system is the evaluated one (same adapter, prompt, decoding, precision, GPU type).
