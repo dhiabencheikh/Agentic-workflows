@@ -6,10 +6,16 @@ path (data loading, compression, LoRA, completion-only loss, evaluation, saving)
 runs in seconds. Quantization is switched off: bitsandbytes needs a GPU.
 """
 
+import pytest
+
+# Needs the training/serving libraries (dev dependencies): skipped in CI, which installs --no-dev.
+for _lib in ("torch", "transformers", "peft"):
+    pytest.importorskip(_lib)
+
+
 import json
 from pathlib import Path
 
-import pytest
 from kfp.dsl import Dataset, Metrics, Model
 from transformers import AutoTokenizer
 

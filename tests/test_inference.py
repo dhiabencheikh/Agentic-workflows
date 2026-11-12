@@ -1,9 +1,15 @@
 """Tests of the inference component on CPU with the tiny Phi-3 (random text: formats only, not quality)."""
 
+import pytest
+
+# Needs the training/serving libraries (dev dependencies): skipped in CI, which installs --no-dev.
+for _lib in ("torch", "transformers", "peft"):
+    pytest.importorskip(_lib)
+
+
 import json
 from pathlib import Path
 
-import pytest
 from kfp.dsl import Dataset, Model
 from transformers import AutoTokenizer
 
