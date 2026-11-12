@@ -68,6 +68,119 @@ def last(entries: list, pattern: str):
     return next((e for e in reversed(entries) if re.search(pattern, text_of(e))), None)
 
 
+def custom_job_for(job, task) -> str:
+    """Resource name of the custom job that ran a pipeline task.
+
+    Vertex does not always fill task.executor_detail; its jobs are named
+    caip_pipelines_<run billing id>_<task id>, which identifies them exactly.
+    """
+    if task.executor_detail.custom_job_detail.job:
+        return task.executor_detail.custom_job_detail.job
+    billing_id = job.labels["vertex-ai-pipelines-run-billing-id"]
+    candidates = aiplatform.CustomJob.list(filter=f'labels.vertex-ai-pipelines-run-billing-id="{billing_id}"')
+    matches = [c for c in candidates if c.gca_resource.display_name.endswith(f"_{task.task_id}")]
+    if len(matches) != 1:
+        raise RuntimeError(f"Expected 1 custom job for task {task.task_name}, found {len(matches)}")
+    return matches[0].resource_name
+
+
+def fmt(seconds) -> str:
+    return "unknown" if seconds is None else f"{seconds:,.0f} s ({seconds / 60:.1f} min)"
+
+
+def inference_report(job, args) -> list:
+    """Per setup step: overhead (wait, provisioning, container + pip, model load) vs inference."""
+    credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+    session = AuthorizedSession(credentials)
+    bucket = storage.Client(project=PROJECT_ID).bucket(BUCKET_NAME)
+    tasks = [t for t in job.gca_resource.job_detail.task_details if "inference" in t.task_name]
+    tasks.sort(key=lambda t: t.start_time.timestamp() if t.start_time else float("inf"))
+    rows, previous_end = [], None
+    for task in tasks:
+        custom_job_name = custom_job_for(job, task)
+        cj = aiplatform.CustomJob.get(custom_job_name).gca_resource
+        entries = log_entries(session, custom_job_name.rsplit("/", 1)[-1])
+        marks = {
+            "step_start": ts(task.start_time) if task.start_time else None,
+            "waiting": first(entries, r"Waiting for job to be provisioned"),
+            "job_running": first(entries, r"^Job is running"),
+            "our_first_line": first(entries, r"Setup [abc]: \d+ cases"),
+            "model_ready": first(entries, r"Model ready"),
+            "inference_done": first(entries, r"Inference done"),
+            "step_end": ts(task.end_time) if task.end_time else None,
+        }
+        times = {k: (v if isinstance(v, datetime) or v is None else ts(v["timestamp"])) for k, v in marks.items()}
+
+        def span(a: str, b: str):
+            return (times[b] - times[a]).total_seconds() if times[a] and times[b] else None
+
+        artifact = task.outputs["predictions"].artifacts[0] if "predictions" in task.outputs else None
+        meta = dict(artifact.metadata) if artifact else {}
+        latencies = []
+        if artifact:
+            blob = bucket.blob(artifact.uri.replace(f"gs://{BUCKET_NAME}/", ""))
+            if blob.exists():
+                records = [json.loads(line) for line in blob.download_as_text().splitlines()]
+                latencies = sorted(r["latency_seconds"] for r in records if r["latency_seconds"] is not None)
+        phases = {
+            "wait": span("step_start", "waiting"),
+            "provisioning": span("waiting", "job_running"),
+            "container_pip": span("job_running", "our_first_line"),
+            "model_load": span("our_first_line", "model_ready"),
+            "inference": span("model_ready", "inference_done"),
+            "save_teardown": span("inference_done", "step_end"),
+            "whole_step": span("step_start", "step_end"),
+        }
+        overhead_parts = [phases[k] for k in ("wait", "provisioning", "container_pip", "model_load")]
+        overhead = sum(overhead_parts) if None not in overhead_parts else None
+        gap = (times["step_start"] - previous_end).total_seconds() if previous_end and times["step_start"] else None
+        previous_end = times["step_end"]
+        rows.append({
+            "setup": meta.get("setup", "?"), "task": task.task_name, "state": task.state.name,
+            "machine": cj.job_spec.worker_pool_specs[0].machine_spec.machine_type,
+            "cases": int(meta.get("cases", 0)), "errors": int(meta.get("errors", 0)),
+            "phases": phases, "overhead": overhead, "gap_after_previous": gap,
+            "median_latency": latencies[len(latencies) // 2] if latencies else None,
+            "generation_only": sum(latencies) if latencies else None,
+        })
+
+    report = [
+        "## Evaluation steps: overhead vs inference",
+        "",
+        "Overhead = wait + provisioning + container and pip + model load. Inference = model ready -> inference done.",
+        "",
+        "| Setup | State | Machine | Cases | Errors (rate) | Wait | Provisioning | Container + pip | Model load | "
+        "**Overhead** | **Inference** | Median s/case | Save + teardown | Whole step | Gap after previous step |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for r in rows:
+        ph = r["phases"]
+        rate = f"{r['errors']} ({r['errors'] / r['cases']:.1%})" if r["cases"] else "-"
+        median = "?" if r["median_latency"] is None else f"{r['median_latency']:.1f} s"
+
+        def cell(seconds) -> str:
+            return "?" if seconds is None else f"{seconds:,.0f} s"
+
+        report.append(
+            f"| {r['setup']} | {r['state']} | {r['machine']} | {r['cases']} | {rate} | {cell(ph['wait'])} | "
+            f"{cell(ph['provisioning'])} | {cell(ph['container_pip'])} | {cell(ph['model_load'])} | "
+            f"**{cell(r['overhead'])}** | **{cell(ph['inference'])}** | {median} | "
+            f"{cell(ph['save_teardown'])} | {cell(ph['whole_step'])} | {cell(r['gap_after_previous'])} |"
+        )
+    g = job.gca_resource
+    total = (g.end_time - g.create_time).total_seconds() if g.end_time else None
+    overheads = [r["overhead"] for r in rows if r["overhead"] is not None]
+    inferences = [r["phases"]["inference"] for r in rows if r["phases"]["inference"] is not None]
+    report += [
+        "",
+        f"- Pipeline wall time (created -> ended): {fmt(total)}",
+        f"- Sum of overheads: {fmt(sum(overheads) if overheads else None)}; sum of inference: "
+        f"{fmt(sum(inferences) if inferences else None)}",
+        "",
+    ]
+    return report
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--job", required=True, help="pipeline job id, e.g. model-training-pipeline-20261112163043")
@@ -76,16 +189,21 @@ def main() -> None:
 
     aiplatform.init(project=PROJECT_ID, location=REGION)
     job = aiplatform.PipelineJob.get(args.job)
+    if any("inference" in t.task_name for t in job.gca_resource.job_detail.task_details):
+        report = [
+            f"# Evaluation run report: `{args.job}`",
+            "",
+            f"Generated by `scripts/pipeline_job_report.py` from Vertex AI and Cloud Logging. State: {job.state.name}. "
+            "Times in UTC (Paris = UTC+1).",
+            "",
+            *inference_report(job, args),
+        ]
+        with open(args.out, "w", encoding="utf-8") as file:
+            file.write("\n".join(report))
+        print("\n".join(report))
+        return
     task = next(t for t in job.gca_resource.job_detail.task_details if t.task_name == "fine-tuning-component")
-    custom_job_name = task.executor_detail.custom_job_detail.job
-    if not custom_job_name:
-        # Vertex does not always fill the link; every job of a run carries the run's billing label.
-        billing_id = job.labels["vertex-ai-pipelines-run-billing-id"]
-        candidates = aiplatform.CustomJob.list(filter=f'labels.vertex-ai-pipelines-run-billing-id="{billing_id}"')
-        gpu_jobs = [c for c in candidates if c.gca_resource.job_spec.worker_pool_specs[0].machine_spec.accelerator_count]
-        if len(gpu_jobs) != 1:
-            raise RuntimeError(f"Expected 1 GPU job for run {args.job}, found {len(gpu_jobs)}")
-        custom_job_name = gpu_jobs[0].resource_name
+    custom_job_name = custom_job_for(job, task)
     custom_job = aiplatform.CustomJob.get(custom_job_name)
     cj = custom_job.gca_resource
     machine = cj.job_spec.worker_pool_specs[0].machine_spec
@@ -145,9 +263,6 @@ def main() -> None:
         mean_eval = sum(eval_runtimes) / len(eval_runtimes)
     if update_seconds is None and train_runtime and steps and mean_eval is not None:
         update_seconds = (train_runtime - n_evals_during * mean_eval) / steps
-
-    def fmt(seconds) -> str:
-        return "unknown" if seconds is None else f"{seconds:,.0f} s ({seconds / 60:.1f} min)"
 
     report = [
         f"# Pipeline run report: `{args.job}`",
