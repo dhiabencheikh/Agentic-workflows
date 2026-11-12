@@ -84,3 +84,46 @@ def test_predictions_for_unknown_cases_fail_the_gate(tmp_path):
     cards = write(tmp_path, "cards.jsonl", [card(0)])
     preds = write(tmp_path, "p.jsonl", [prediction("15_44_x#turn0", "What does line 3 do?"), prediction("not-a-case", "x")])
     assert main(["--cards", str(cards), "--predictions", str(preds), "--out", str(tmp_path / "r.json")]) == 1
+
+
+def test_no_judge_and_no_ai_library_without_the_flag(tmp_path, monkeypatch):
+    import builtins
+
+    real_import = builtins.__import__
+
+    def guarded(name, *args, **kwargs):
+        assert not name.startswith("langchain"), "langchain imported without --judge"
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", guarded)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-not-a-real-key")
+    cards = write(tmp_path, "cards.jsonl", [card(0)])
+    preds = write(tmp_path, "p.jsonl", [prediction("15_44_x#turn0", "What does line 3 do?")])
+    out = tmp_path / "r.json"
+    assert main(["--cards", str(cards), "--predictions", str(preds), "--out", str(out)]) == 0
+    assert json.loads(out.read_text())["setups"]["c"]["judge"] is None
+
+
+def test_judge_flag_needs_a_model_and_a_key(tmp_path, monkeypatch):
+    cards = write(tmp_path, "cards.jsonl", [card(0)])
+    preds = write(tmp_path, "p.jsonl", [prediction("15_44_x#turn0", "What does line 3 do?")])
+    common = ["--cards", str(cards), "--predictions", str(preds), "--out", str(tmp_path / "r.json"), "--judge"]
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    assert main(common) == 2                                   # no model
+    assert main(common + ["--judge-model", "some-model"]) == 2  # no key
+
+
+def test_judge_scores_are_recorded_and_validated(tmp_path):
+    class FakeJudge:
+        def __init__(self, contents):
+            self.contents = iter(contents)
+
+        def invoke(self, messages):
+            return type("Reply", (), {"content": next(self.contents)})()
+
+    cases = load_cases([write(tmp_path, "cards.jsonl", [card(0), card(1)])], [])
+    preds = [prediction("15_44_x#turn0", "What does line 3 do?"), prediction("15_44_x#turn1", "Which i makes x == seq[i]?")]
+    report = evaluate(cases, preds, FakeJudge(['{"score": 4, "reasoning": "good"}', '{"score": 9, "reasoning": "?"}']))
+    judged = [d["judge"]["score"] for d in report["setups"]["c"]["details"]]
+    assert judged == [4, None]  # 9 is outside 1..5: recorded as invalid, not as a score
+    assert report["setups"]["c"]["judge"] == {"scored": 1, "mean_score": 4.0}
