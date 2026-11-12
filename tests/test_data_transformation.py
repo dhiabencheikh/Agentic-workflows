@@ -97,6 +97,19 @@ def test_bug_description_and_fixes_never_appear_in_the_input(splits):
         assert example["bug_fixes"].startswith("SECRET_FIX")
 
 
+def test_bug_code_and_unit_tests_are_background_fields_only(splits):
+    """Both are stored for evaluation. Unit tests never reach the model.
+    The buggy code is the student's own code: the student pastes it in the
+    first message, and the field is a separate copy for the leak metric."""
+    for example in splits["train"] + splits["validation"] + splits["test"]:
+        problem = example["problem_id"]
+        assert example["unit_tests"] == f"assert f{problem}(1) == {1 + int(problem)}"
+        assert example["unit_tests"] not in json.dumps(example["messages"])
+        assert example["bug_code"] == f"1. def f{problem}(n):\n2.   return n - {problem}"
+        assert example["bug_code"] in example["messages"][1]["content"]
+        assert all(example["bug_code"] not in m["content"] for m in example["messages"] if m["role"] == "assistant")
+
+
 def test_duplicate_openings_from_threads_are_removed(splits):
     # Fixtures: 6 dialogues x 3 tutor turns + 2 threads x 4 tutor turns, 2 duplicated openings.
     assert len(splits["train"]) + len(splits["validation"]) == 6 * 3 + 2 * 4 - 2

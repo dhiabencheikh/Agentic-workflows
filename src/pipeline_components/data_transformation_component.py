@@ -145,7 +145,10 @@ def data_transformation_component(
         """One example per tutor turn: everything said before it, then the turn.
 
         The tutor sees the problem, the buggy code and the conversation.
-        Bug description and fixes are kept as metadata only, never as input.
+        Background fields, never added to the messages: bug_desc and bug_fixes
+        (the answer key, for the leak metric), bug_code (a separate copy of the
+        student's original lines, to detect a tutor rewriting them) and
+        unit_tests (for evaluation; only ever executed in a sandbox).
         """
         context = f"Problem statement:\n{sections['problem']}\n\nMy code:\n```python\n{sections['bug_code']}\n```"
         turns = merge_same_role(parse_dialogue(sections["dialogue"]))
@@ -168,6 +171,8 @@ def data_transformation_component(
                         "reference_alternatives": turn["alts"],
                         "bug_desc": sections["bug_desc"],
                         "bug_fixes": sections["bug_fixes"],
+                        "bug_code": sections["bug_code"],
+                        "unit_tests": sections["unit_tests"],
                     }
                 )
             content = turn["content"]

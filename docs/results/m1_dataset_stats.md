@@ -86,6 +86,8 @@ ASSISTANT_PROBE<|end|>
   ],
   "bug_desc": "On line 11, the for loop iterates `n` times. Consequently, the function returns the (n+1)th term of the Fibonacci sequence instead of the nth term, as the loop generates one additional term beyond the desired nth term.",
   "bug_fixes": "Replace `range(0, n)` with `range(1, n)` on line 11.\nReplace `range(0, n)` with `range(0, n - 1)` on line 11.\nReplace `range(0, n)` with `range(2, n + 1)` on line 11.",
+  "bug_code": "1. def fibonacci(n):\n2.  if n <= 0:\n3.    return \"OOPS\"\n4.  elif n == 1:\n5.    return 1\n6.  elif n == 2:\n7.    return 1\n8.  else:\n9.     a = 0\n10.    b = 1\n11.    for i in range(0, n):\n12.      temp = b\n13.      b = a + b\n14.      a = temp\n15.    return b",
+  "unit_tests": "assert fibonacci(0) == 'OOPS'\nassert fibonacci(1) == 1\nassert fibonacci(2) == 1\nassert fibonacci(5) == 5\nassert fibonacci(-3) == 'OOPS'\nassert fibonacci(10) == 55",
   "split": "train",
   "prompt_version": "1.0.0"
 }
