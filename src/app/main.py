@@ -19,11 +19,9 @@ if REPLAY:
     from src.app.replay import banner, load_replay, menu, render
 else:
     from src.app.endpoint_client import TutorEndpoint
-    from src.app.tracing import new_trace, traced_reply, tracing_enabled
+    from src.app.tracing import tracing_enabled
+    from src.app.turn import answer_turn
     from src.constants import REGION
-    from src.guardrail import SAFE_REPLY, check_input
-    from src.output_guardrail import SAFE_REPLY as SAFE_OUTPUT_REPLY
-    from src.output_guardrail import check_reply
 
     LANGFUSE = None
     if tracing_enabled():
@@ -60,38 +58,20 @@ async def on_message(message: cl.Message) -> None:
         await cl.Message(content=render(data, message.content) + "\n\n---\n" + menu(data)).send()
         return
     history = cl.user_session.get("history")
-    guard = check_input(message.content)
-    if guard["blocked"]:  # prompt-injection guardrail: the model is not called
-        if LANGFUSE:
-            with LANGFUSE.start_as_current_span(name="guardrail-block", input=message.content, output=SAFE_REPLY,
-                                                metadata=guard, trace_context=new_trace(LANGFUSE)):
-                pass
-            LANGFUSE.flush()
-        await cl.Message(content=SAFE_REPLY).send()
-        return
     history.append({"role": "user", "content": message.content})
     try:
-        endpoint = cl.user_session.get("endpoint")
-        if LANGFUSE:
-            reply = await cl.make_async(traced_reply)(
-                LANGFUSE, endpoint, list(history), message.content, cl.user_session.get("model_info"), REGION
-            )
-            LANGFUSE.flush()
-        else:
-            reply = (await cl.make_async(endpoint.reply)(history))["response"]
+        result = await cl.make_async(answer_turn)(
+            LANGFUSE, cl.user_session.get("endpoint"), list(history), cl.user_session.get("model_info"), REGION
+        )
     except Exception as error:  # show the failure, keep the conversation consistent
         history.pop()
-        if LANGFUSE:
-            LANGFUSE.flush()
         await cl.Message(content=f"Sorry, the tutor is unavailable right now ({type(error).__name__}).").send()
         return
-    verdict = check_reply(reply, history)
-    if verdict["blocked"]:  # output guardrail: the reply rewrites the student's code
+    finally:
         if LANGFUSE:
-            with LANGFUSE.start_as_current_span(name="output-guardrail-block", input=reply, output=SAFE_OUTPUT_REPLY,
-                                                metadata=verdict, trace_context=new_trace(LANGFUSE)):
-                pass
             LANGFUSE.flush()
-        reply = SAFE_OUTPUT_REPLY
-    history.append({"role": "assistant", "content": reply})
-    await cl.Message(content=reply).send()
+    if result["outcome"] == "input_blocked":
+        history.pop()  # the blocked message is not part of the tutoring conversation
+    else:
+        history.append({"role": "assistant", "content": result["reply"]})
+    await cl.Message(content=result["reply"]).send()

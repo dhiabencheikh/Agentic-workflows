@@ -49,9 +49,12 @@ def new_trace(langfuse) -> dict:
     return {"trace_id": langfuse.create_trace_id()}
 
 
-def traced_reply(langfuse, endpoint, history: list, user_message: str, model_info: dict, region: str) -> str:
+def traced_reply(langfuse, endpoint, history: list, user_message: str, model_info: dict, region: str,
+                 tags: list | None = None) -> str:
     """Call the endpoint inside a span with a nested generation; returns the reply shown to the student."""
     with langfuse.start_as_current_span(name="tutor-turn", input=user_message, trace_context=new_trace(langfuse)) as span:
+        if tags:
+            langfuse.update_current_trace(tags=tags)
         with langfuse.start_as_current_generation(
             name="endpoint-generation",
             model=MODEL_NAME,
