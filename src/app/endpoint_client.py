@@ -31,10 +31,11 @@ def parse_prediction(predictions: list) -> dict:
 class TutorEndpoint:
     """Calls the Vertex AI endpoint whose id is GCP_ENDPOINT_ID in .env."""
 
-    def __init__(self, endpoint_id: str | None = None) -> None:
+    def __init__(self, endpoint_id: str | None = None, region: str | None = None) -> None:
+        """endpoint_id and region default to GCP_ENDPOINT_ID and GCP_REGION from .env."""
         from google.cloud import aiplatform
 
-        aiplatform.init(project=PROJECT_ID, location=REGION)
+        aiplatform.init(project=PROJECT_ID, location=region or REGION)
         self.endpoint = aiplatform.Endpoint(endpoint_id or os.environ["GCP_ENDPOINT_ID"])
 
     def reply(self, history: list) -> dict[str, Any]:

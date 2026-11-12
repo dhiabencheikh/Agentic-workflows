@@ -27,8 +27,9 @@ def main() -> None:
     parser.add_argument("--accelerator", default="NVIDIA_TESLA_T4", help="fallback when no T4: NVIDIA_L4")
     parser.add_argument("--retries", type=int, default=3, help="retries when no GPU is available (503)")
     parser.add_argument("--retry-wait", type=int, default=180, help="seconds between retries")
+    parser.add_argument("--region", default=REGION, help="GCP region (default: GCP_REGION from .env)")
     args = parser.parse_args()
-    aiplatform.init(project=PROJECT_ID, location=REGION)
+    aiplatform.init(project=PROJECT_ID, location=args.region)
     model = aiplatform.Model(args.model)
     if args.endpoint:
         endpoint = aiplatform.Endpoint(args.endpoint)

@@ -48,11 +48,12 @@ def main() -> None:
     parser.add_argument("--model-uri", required=True, help="the 'model' output folder of the fine-tuning step")
     parser.add_argument("--display-name", default=MODEL_DISPLAY_NAME)
     parser.add_argument("--parent-model", default=None, help="register as a new version of this model")
+    parser.add_argument("--region", default=REGION, help="GCP region (default: GCP_REGION from .env)")
     args = parser.parse_args()
 
     uploaded = upload_serving_files(args.model_uri)
     print(f"Uploaded to {args.model_uri}: {', '.join(uploaded)}")
-    aiplatform.init(project=PROJECT_ID, location=REGION)
+    aiplatform.init(project=PROJECT_ID, location=args.region)
     model = aiplatform.Model.upload(
         display_name=args.display_name,
         artifact_uri=args.model_uri,

@@ -15,8 +15,9 @@ from src.constants import PROJECT_ID, REGION
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--endpoint", required=True)
+    parser.add_argument("--region", default=REGION, help="GCP region (default: GCP_REGION from .env)")
     args = parser.parse_args()
-    aiplatform.init(project=PROJECT_ID, location=REGION)
+    aiplatform.init(project=PROJECT_ID, location=args.region)
     endpoint = aiplatform.Endpoint(args.endpoint)
     endpoint.undeploy_all()
     endpoint.delete()
