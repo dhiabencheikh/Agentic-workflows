@@ -81,8 +81,12 @@ RUN_MODES: dict = {
     "full": {"name": "full", "max_steps": -1, "max_train_cards": 0},
 }
 
-# Generation parameters for evaluation (M3), Session 4 slides 18-20.
-# Greedy decoding (do_sample False): same input -> same reply, so the three setups are
-# compared fairly and scores are reproducible. 256 new tokens (course example value) leaves
-# room above the longest human reply (164 tokens in train, 78 in test): a leak is not cut off.
-GENERATION_PARAMETERS: dict = {"max_new_tokens": 256, "do_sample": False}
+# Generation parameters (Session 4 slides 18-20): part of the evaluated system, like the prompt.
+# The SAME dict is used by M3 evaluation and by M5 serving (handler, Chainlit). Any change means
+# re-evaluating: scores are compared only between runs with the same prompt version AND this dict.
+# - Greedy decoding (do_sample False): same input -> same reply, fair and reproducible comparison.
+# - 256 new tokens (course example value): above the longest human reply (164 tokens in train,
+#   78 in test), so a leak such as pasted code is not cut off.
+# - Stop tokens: Phi-3's generation_config.json ids <|endoftext|> 32000, <|assistant|> 32001,
+#   <|end|> 32007 (tokenizer.eos_token_id alone is 32000 and would let the model write past <|end|>).
+GENERATION_PARAMETERS: dict = {"max_new_tokens": 256, "do_sample": False, "eos_token_id": [32000, 32001, 32007]}

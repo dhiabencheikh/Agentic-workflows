@@ -7,13 +7,13 @@ import pytest
 from kfp.dsl import Dataset, Model
 from transformers import AutoTokenizer
 
-from src.constants import BASE_MODEL_REVISION, FINE_TUNING_HYPERPARAMETERS
+from src.constants import BASE_MODEL_ID, BASE_MODEL_REVISION, FINE_TUNING_HYPERPARAMETERS, GENERATION_PARAMETERS
 from src.eval_cases import build_messages, card_to_case
 from src.pipeline_components.inference_component import inference_component
 from src.prompts import TUTOR_PROMPT_VERSION, load_tutor_prompt
 
 PROMPT = load_tutor_prompt()
-GENERATION = {"max_new_tokens": 5, "do_sample": False}
+GENERATION = {**GENERATION_PARAMETERS, "max_new_tokens": 5}  # same decoding, shorter for speed
 PREDICTION_FIELDS = {
     "case_id", "setup", "model", "prompt_version", "generation", "response",
     "input_tokens", "output_tokens", "latency_seconds", "error",
@@ -69,7 +69,8 @@ def adapter_dir(tiny_model_dir, tmp_path_factory) -> Path:
     return folder
 
 
-def run(tmp_path: Path, model_dir: Path, setup: str, adapter=None, extra=None, max_cases: int = 0) -> list:
+def run(tmp_path: Path, model_dir: Path, setup: str, adapter=None, extra=None, max_cases: int = 0,
+        generation: dict = GENERATION) -> list:
     cards = tmp_path / f"cards_{setup}.jsonl"
     cards.write_text("\n".join(json.dumps(m1_card(i)) for i in range(3)))
     extra_uri = ""
@@ -85,7 +86,7 @@ def run(tmp_path: Path, model_dir: Path, setup: str, adapter=None, extra=None, m
         base_model_revision=BASE_MODEL_REVISION,
         system_prompt=PROMPT,
         prompt_version=TUTOR_PROMPT_VERSION,
-        generation=GENERATION,
+        generation=generation,
         extra_cases_uri=extra_uri,
         max_cases=max_cases,
         predictions=out,
@@ -150,3 +151,15 @@ def test_setup_c_requires_the_adapter_and_max_cases_limits(tmp_path, tiny_model_
     with pytest.raises(ValueError, match="needs the fine-tuned adapter"):
         run(tmp_path, tiny_model_dir, "c")
     assert len(run(tmp_path, tiny_model_dir, "a", max_cases=2)) == 2
+
+
+def test_stop_tokens_in_generation_parameters_are_phi3_turn_markers():
+    """The ids in GENERATION_PARAMETERS must be Phi-3's <|endoftext|>, <|assistant|>, <|end|>."""
+    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_ID, revision=BASE_MODEL_REVISION)
+    expected = [tokenizer.convert_tokens_to_ids(t) for t in ("<|endoftext|>", "<|assistant|>", "<|end|>")]
+    assert GENERATION_PARAMETERS["eos_token_id"] == expected
+
+
+def test_generation_without_stop_tokens_is_refused(tmp_path, tiny_model_dir):
+    with pytest.raises(ValueError, match="eos_token_id"):
+        run(tmp_path, tiny_model_dir, "a", generation={"max_new_tokens": 5, "do_sample": False})

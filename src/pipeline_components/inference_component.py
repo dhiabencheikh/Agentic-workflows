@@ -118,10 +118,10 @@ def inference_component(
         adapter_uri = adapter.uri
     model.eval()
 
-    # Stop at the end of the tutor's turn. Phi-3's generation_config lists these three ids
-    # (32000, 32001, 32007); tokenizer.eos_token_id alone is <|endoftext|> and would let the
-    # model write past <|end|>.
-    stop_ids = [tokenizer.convert_tokens_to_ids(t) for t in ("<|endoftext|>", "<|assistant|>", "<|end|>")]
+    # Decoding comes entirely from `generation` (GENERATION_PARAMETERS), stop tokens included,
+    # so evaluation and serving use one definition.
+    if "eos_token_id" not in generation:
+        raise ValueError("generation must define eos_token_id (Phi-3 stop tokens)")
 
     records, latencies = [], []
     for case in cases:
@@ -146,7 +146,6 @@ def inference_component(
                 output = model.generate(
                     input_ids,
                     attention_mask=torch.ones_like(input_ids),
-                    eos_token_id=stop_ids,
                     pad_token_id=tokenizer.unk_token_id,
                     **generation,
                 )
