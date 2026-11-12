@@ -109,3 +109,26 @@ def test_student_code_edits_become_markdown_code_blocks(splits):
     student_turn = last["messages"][-2]["content"]
     assert "```python" in student_turn and "return n + 9" in student_turn
     assert "<code>" not in student_turn
+
+
+def test_code_block_after_a_tutor_line_goes_to_the_next_student_turn(tmp_path):
+    """In the dataset, a student's code edit can sit right after a tutor line
+    (e.g. train/66_69_last_index_of). It must never become part of a tutor target."""
+    outputs = {split: tmp_path / f"{split}.jsonl" for split in ("train", "validation", "test")}
+    data_transformation_component.python_func(
+        raw_dataset_uri=str(Path(__file__).parent / "fixtures" / "code_after_tutor"),
+        system_prompt=SYSTEM_PROMPT,
+        num_validation_problems=1,
+        seed=0,
+        train_dataset=str(outputs["train"]),
+        validation_dataset=str(outputs["validation"]),
+        test_dataset=str(outputs["test"]),
+    )
+    examples = [json.loads(line) for path in outputs.values() for line in path.read_text().splitlines()]
+    for example in examples:
+        assert "```" not in example["messages"][-1]["content"]
+    last = max(examples, key=lambda e: len(e["messages"]))
+    student_turn = last["messages"][-2]["content"]
+    assert student_turn.startswith("I need to add a -1 step!")
+    assert "range(len(array)-1, -1, -1)" in student_turn
+    assert last["messages"][-3]["content"] == "What would you need to do in the code to fix that?"

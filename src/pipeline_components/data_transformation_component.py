@@ -65,28 +65,47 @@ def data_transformation_component(
     def parse_dialogue(dialogue: str) -> list:
         """Split a dialogue into turns: role, content and <alt> replies.
 
-        Student code edits inside <code> blocks are kept in the student's
-        turn, as a Markdown code block like a student would paste it.
+        <code> blocks are student code edits. They are always given to the
+        student, as a Markdown code block like a student would paste it:
+        - after a student line: added to that student turn
+        - after a tutor line: the student edited the code before answering,
+          so the block is added to the NEXT student turn, never to the tutor
         """
         turns = []
         in_code = False
+        code_lines = []
+        pending_code = []  # code blocks waiting for the next student turn
+
+        def code_block(lines: list) -> str:
+            while lines and not lines[-1].strip():
+                lines = lines[:-1]
+            return "```python\n" + "\n".join(lines) + "\n```"
+
         for line in dialogue.split("\n"):
             stripped = line.strip()
             if in_code:
                 if stripped == "</code>":
-                    turns[-1]["content"] = turns[-1]["content"].rstrip() + "\n```"
+                    block = code_block(code_lines)
+                    if turns and turns[-1]["role"] == "user":
+                        turns[-1]["content"] += "\n" + block
+                    else:
+                        pending_code.append(block)
                     in_code = False
                 else:
-                    turns[-1]["content"] += "\n" + line.rstrip()
+                    code_lines.append(line.rstrip())
                 continue
             if stripped == "<code>":
-                turns[-1]["content"] += "\n```python"
                 in_code = True
+                code_lines = []
                 continue
             speaker = re.match(r"^(User|Assistant):\s?(.*)$", line)
             if speaker:
                 role = "user" if speaker.group(1) == "User" else "assistant"
-                turns.append({"role": role, "content": speaker.group(2).strip(), "alts": []})
+                content = speaker.group(2).strip()
+                if role == "user" and pending_code:
+                    content = "\n".join([content, *pending_code])
+                    pending_code = []
+                turns.append({"role": role, "content": content, "alts": []})
                 continue
             alt = re.match(r"^\s*<alt>(.*)$", line)
             if alt and turns:
@@ -94,6 +113,8 @@ def data_transformation_component(
                 continue
             if stripped and turns:
                 turns[-1]["content"] += "\n" + line.rstrip()
+        if pending_code:
+            logger.warning("A <code> block after the last tutor turn had no student turn: dropped")
         return turns
 
     def merge_same_role(turns: list) -> list:
