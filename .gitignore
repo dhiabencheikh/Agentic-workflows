@@ -225,7 +225,9 @@ model_training_pipeline.json
 # Compiled Kubeflow pipeline (renamed)
 benjosh-socratic-tutor.json
 
-# TensorBoard logs downloaded from runs
-logs/
+# Compiled evaluation pipeline
+benjosh-socratic-eval.json
 # Evaluation runner output (regenerated; real results go to docs/results/)
 eval/results.json
+# TensorBoard logs downloaded from runs
+logs/

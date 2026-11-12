@@ -35,6 +35,9 @@ Each entry has the same parts:
 | 18 | [Completion-only loss](#18-completion-only-loss) | M2 | NEW (Session 2 slide 19 states the idea) |
 | 19 | [Training hyper-parameters and the GPU step](#19-training-hyper-parameters-and-the-gpu-step) | M2 | Session 3 slide 12, Practice 3 |
 | 20 | [Context compression](#20-context-compression) | M2 (used in M3-M5) | Syllabus LO7 |
+| 21 | [Generating a reply: inference parameters](#21-generating-a-reply-inference-parameters) | M3 | Session 4 slides 18-20, Practice 3 section 2 |
+| 22 | [Three setups as a controlled experiment](#22-three-setups-as-a-controlled-experiment) | M3 | NEW (project requirement: before/after) |
+| 23 | [ROUGE-L and best-match similarity](#23-rouge-l-and-best-match-similarity) | M3 | Session 3 slides 15-17 |
 
 ---
 
@@ -558,4 +561,80 @@ A card or a live conversation can outgrow the model's window. Cutting the start 
 **Check yourself.** Why does the compression delete messages in pairs?
 <details><summary>Answer</summary>
 Chat templates expect user and assistant turns to alternate. Deleting one message would put two student or two tutor messages in a row, a format the model never saw in training.
+</details>
+
+---
+
+## 21. Generating a reply: inference parameters
+
+**In plain words.**
+The model writes one token at a time: at each step it gives a probability to every possible next token, one is chosen and appended, until a stop token. Generation parameters decide how each token is chosen and when to stop.
+
+**How it works.**
+- **Greedy** (`do_sample=False`): always the most probable token. Same input, same output. **Sampling** (`temperature`, `top_k`, `top_p`) adds randomness: more varied, less reproducible.
+- We evaluate with greedy decoding so the three setups are compared fairly and scores are reproducible.
+- `max_new_tokens=256` (course example value): above the longest human reply (164 tokens in train, 78 in test), so a leak such as pasted code is not cut off before we can see it.
+- **Stop tokens:** `tokenizer.eos_token_id` is `<|endoftext|>` (32000), but a Phi-3 turn ends with `<|end|>` (32007). We pass the three ids of Phi-3's `generation_config.json` (32000, 32001, 32007), otherwise the model could keep writing past its turn.
+- Precision: fp16 base model for all setups (Session 4 slide 20); 4-bit was only needed to fit training. For setup c the LoRA adapter is placed on top with `PeftModel.from_pretrained`.
+- Only the new tokens are decoded, with special tokens skipped.
+
+**In this course.** Session 4 slide 18 (temperature, top_k, top_p), slide 19 (max_new_tokens, eos_token_id "must be set from the tokenizer", do_sample, num_beams), slide 20 (fp16, `.eval()`). Practice 3 section 2 (inference component).
+
+**Seen before.** Generative AI I: next-token prediction (sampling settings: to confirm).
+
+**In our repo.** [inference_component.py](../src/pipeline_components/inference_component.py), `GENERATION_PARAMETERS` in [constants.py](../src/constants.py).
+
+**Check yourself.** Why would sampling with temperature 0.8 make the base vs fine-tuned comparison harder to trust?
+<details><summary>Answer</summary>
+Each run would produce different replies for the same input, so part of the score difference between setups would be random. Greedy decoding removes that noise: any difference comes from the setup (prompt or adapter).
+</details>
+
+---
+
+## 22. Three setups as a controlled experiment
+
+**In plain words.**
+To know what a change does, change one thing at a time, like a clinical trial with a control group.
+(a) to (b) adds only the system prompt: what prompting alone achieves. (b) to (c) adds only the LoRA adapter: what fine-tuning adds on top.
+
+**How it works.**
+- Same 80 test cards (plus hand-written adversarial cases), same base weights and revision, same generation parameters; only the prompt or the adapter changes.
+- One inference component with a `setup` parameter; predictions in the format agreed in [eval/README.md](../eval/README.md).
+- A Kubeflow component ships only its own function (concept 12), so it cannot import `src/eval_cases.py`. The few lines that strip and add the system prompt are copied inside it, and a **parity test** checks that both build exactly the same model input (same token count on every case, for setups a and b).
+- Measured on the tiny test model: setup b's input is longer than a's by exactly one system block, never two.
+
+**In this course.** The before/after comparison on at least 2 metrics is a project requirement (syllabus); the three-setup design is NEW.
+
+**Seen before.** Controlled experiments, A/B tests, ablations (to confirm in which course).
+
+**Check yourself.** Setup c scores better than setup a. Can you say fine-tuning caused the improvement?
+<details><summary>Answer</summary>
+No: a to c changes two things, the prompt and the adapter. Only b to c isolates the adapter's effect; a to b isolates the prompt's.
+</details>
+
+---
+
+## 23. ROUGE-L and best-match similarity
+
+**In plain words.**
+ROUGE-L measures how close a reply is to a human reply through the longest sequence of words they share in the same order (not necessarily side by side). Since several tutor questions can be equally good, we score against the reference and every alternative and keep the best.
+
+**How it works.**
+- LCS (longest common subsequence), computed by dynamic programming. Recall = LCS / human reply length; precision = LCS / model reply length; F1 combines both, from 0 to 1.
+- Example (hand-computed test): "What value does line 3 return here?" vs "What does line 3 return?": LCS 5, precision 5/7, recall 1, F1 0.83.
+- Best match: max F1 over the reference and its `reference_alternatives` (52 of 80 test cards have alternatives).
+- Our plain-Python version is **identical to the `rouge-score` library on all 922 train + validation pairs** (largest difference 0).
+- **Human ceiling** on the test cards: a human alternative scores median **0.345** (mean 0.384, middle half 0.231 to 0.444) against the other references. A model around that level is as close to the references as another human tutor.
+- Limits: counts shared words, not meaning. A good question phrased differently scores low; a fluent reply that leaks the fix can score high. Hence the leak check and the LLM judge alongside it.
+- ROUGE rather than BLEU: BLEU's brevity penalty punishes short outputs, and good tutor replies are short questions (median 13 to 21 tokens).
+
+**In this course.** Session 3 slide 15 (string distance and its limits), slide 16 (BLEU, ROUGE, METEOR), slide 17 (embeddings), slide 19 (ragas).
+
+**Seen before.** Precision, recall, F1 from classification (earlier ML courses); LCS as a dynamic programming algorithm (to confirm).
+
+**In our repo.** [eval/similarity.py](../eval/similarity.py), [m3_similarity_calibration.md](results/m3_similarity_calibration.md).
+
+**Check yourself.** The fine-tuned model scores 0.33 best-match ROUGE-L. Is that low?
+<details><summary>Answer</summary>
+Not necessarily: human tutors' own valid alternatives score a median of 0.345 against the other references. 0.33 is close to what another human tutor would get; the leak check and the judge then say whether the replies are actually good.
 </details>

@@ -17,9 +17,9 @@ import json
 from pathlib import Path
 
 from kfp.dsl import Dataset, Metrics, Model
-from transformers import AutoTokenizer, Phi3Config, Phi3ForCausalLM
+from transformers import AutoTokenizer
 
-from src.constants import BASE_MODEL_ID, BASE_MODEL_REVISION, FINE_TUNING_HYPERPARAMETERS
+from src.constants import BASE_MODEL_REVISION, FINE_TUNING_HYPERPARAMETERS
 from src.pipeline_components.fine_tuning_component import fine_tuning_component
 
 SYSTEM = {"role": "system", "content": "You are a test tutor."}
@@ -39,25 +39,6 @@ def card(card_id: str, middle_turns: int = 0) -> dict:
         {"role": "assistant", "content": "What should it return instead?"},
     ]
     return {"example_id": card_id, "problem_id": "1", "messages": messages, "prompt_version": "0.0.0-test"}
-
-
-@pytest.fixture(scope="module")
-def tiny_model_dir(tmp_path_factory) -> Path:
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_ID, revision=BASE_MODEL_REVISION)
-    config = Phi3Config(
-        vocab_size=32064,
-        hidden_size=32,
-        intermediate_size=64,
-        num_hidden_layers=2,
-        num_attention_heads=4,
-        num_key_value_heads=4,
-        max_position_embeddings=4096,
-        pad_token_id=tokenizer.pad_token_id,
-    )
-    folder = tmp_path_factory.mktemp("tiny-phi3")
-    Phi3ForCausalLM(config).save_pretrained(folder)
-    tokenizer.save_pretrained(folder)
-    return folder
 
 
 def run(tmp_path: Path, model_dir: Path, train_cards: list, max_seq_length: int = 2304, max_steps: int = 2) -> dict:
