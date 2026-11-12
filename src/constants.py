@@ -32,3 +32,26 @@ SPLIT_SEED: int = 42
 # Revision checked on 2026-11-12: it was the head of `main`, last modified 2025-12-10.
 BASE_MODEL_ID: str = "microsoft/Phi-3-mini-4k-instruct"
 BASE_MODEL_REVISION: str = "f39ac1d28e925b323eae81227eaba4464caced4e"
+
+# Fine-tuning hyper-parameters: the single place to change them. The whole dict
+# is passed to the fine-tuning component, logged to Vertex and saved with the model.
+# Starting values (M2 decision D3): LoRA and learning rate as in the course article,
+# fewer epochs than its 10, best checkpoint kept by validation loss.
+FINE_TUNING_HYPERPARAMETERS: dict = {
+    # LoRA (Session 3 slide 11): W' = W + (alpha / r) * BA
+    "lora_r": 8,
+    "lora_alpha": 16,
+    "lora_dropout": 0.05,
+    "lora_target_modules": ["o_proj", "qkv_proj", "gate_up_proj", "down_proj"],
+    # Training (Session 3 slide 12)
+    "learning_rate": 3e-4,
+    "num_train_epochs": 3,
+    "per_device_train_batch_size": 2,
+    "gradient_accumulation_steps": 8,  # effective batch = 2 x 8 = 16 cards per update
+    "per_device_eval_batch_size": 2,
+    # Above the longest card (2066 tokens, docs/results/m2_finetuning_prep.md): no card is cut
+    "max_seq_length": 2304,
+    "eval_steps": 10,  # validation loss every 10 updates, best checkpoint kept
+    "logging_steps": 5,
+    "seed": 42,
+}
