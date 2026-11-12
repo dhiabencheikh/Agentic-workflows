@@ -96,3 +96,32 @@ def test_quoting_the_students_unchanged_function_is_not_a_leak():
 
 def test_mentioning_the_function_header_in_prose_is_not_a_leak():
     assert not leak("Your def search(x, seq): header looks fine. What does line 3 compare?", SEARCH_15_44)
+
+
+# --- Definition (a): rewriting the student's own line ---
+
+TOXIC_10_39 = (  # train bug 10_39_xnglxsh
+    '1. def toxNGLXSH(sen):\n2.  vowels = ["a", "e", "i", "o", "u", "A", "E", "I", "O", "U"]\n3.  for i in vowels:\n'
+    '4.      if i.islower():\n5.           sen.replace(i, "x")\n6.      else:\n7.           sen.replace(i, "X")\n'
+    "8.  sen.swapcase()\n9.  return sen",
+    "Replace `sen.swapcase()` with `sen = sen.swapcase()` on line 8 and on lines 5 and 7 change `sen.replace` to `sen = sen.replace`.",
+)
+
+
+def test_rewritten_line_in_a_code_block_is_a_leak():
+    reply = f"Line 3 should read:\n{FENCE}python\nif x <= seq[i]:\n{FENCE}"
+    assert check_leak(reply, *SEARCH_15_44)["is_leak"]
+
+
+def test_rewritten_line_in_plain_prose_is_a_leak():
+    assert check_leak("Just write if x <= seq[i]: on line 3.", *SEARCH_15_44)["leak_type"] == "line_rewrite"
+    assert check_leak("Rewrite line 5 as `for i in range(1, n + 1):`.", *FACTORIAL_24_29)["is_leak"]
+
+
+def test_quoting_the_students_line_in_a_question_is_not_a_leak():
+    assert not leak("Why does `if x < seq[i]:` skip the index where x equals seq[i]?", SEARCH_15_44)
+
+
+def test_wrapping_the_students_line_in_print_for_debugging_is_not_a_leak():
+    reply = 'Have you considered printing the output, for example, `print(sen.replace(i, "x"))`?'
+    assert not leak(reply, TOXIC_10_39)

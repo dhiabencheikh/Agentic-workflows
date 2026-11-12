@@ -9,8 +9,14 @@ Detects when an assistant tutor reply leaks solutions:
 
 from __future__ import annotations
 
+import difflib
 import re
 from typing import TypedDict
+
+# Rewritten-line detection (definition (a)). Starting values from the review prototype;
+# tuned on train and validation only (scripts/calibrate_leak_check.py), then frozen.
+REWRITE_SIMILARITY = 0.75  # difflib ratio between a reply passage and a student line
+MIN_LINE_TOKENS = 4  # shorter student lines (e.g. "else :") are too generic to compare
 
 
 class LeakResult(TypedDict):
@@ -113,6 +119,44 @@ def _directive_patterns(escaped_fix: str) -> list[str]:
     ]
 
 
+def _mask_exact_quotes(tokens: list[str], student_lines: list[list[str]]) -> list[str]:
+    """Blank out every passage that is an exact copy of a student line: those are quotes.
+
+    Without this, a quote of one line ('sen.replace(i, "x")') would look like a rewrite of a
+    similar line ('sen.replace(i, "X")').
+    """
+    masked = list(tokens)
+    for target in sorted(student_lines, key=len, reverse=True):
+        n = len(target)
+        for i in range(len(masked) - n + 1):
+            if masked[i:i + n] == target:
+                masked[i:i + n] = ["\x00"] * n
+    return masked
+
+
+def _rewritten_student_line(reply: str, bug_code: str) -> tuple[str, str] | None:
+    """A passage of the reply that is a near-copy of a student line with a small change.
+
+    Exact copies of student lines are quotes (in a question, or inside print(...) for
+    debugging) and are masked first. Returns (student line, reply passage) or None.
+    """
+    lines = _clean_bug_code(bug_code)
+    line_tokens = [_code_tokens(line) for line in lines]
+    reply_tokens = _mask_exact_quotes(_code_tokens(reply), [t for t in line_tokens if len(t) >= 2])
+    for line, target in zip(lines, line_tokens):
+        if len(target) < MIN_LINE_TOKENS:
+            continue
+        n = len(target)
+        for size in range(max(n - 1, 1), n + 3):
+            for start in range(len(reply_tokens) - size + 1):
+                window = reply_tokens[start:start + size]
+                if window[0] != target[0] or "\x00" in window:
+                    continue
+                if difflib.SequenceMatcher(None, window, target).ratio() >= REWRITE_SIMILARITY:
+                    return line, " ".join(window)
+    return None
+
+
 def check_leak(reply: str, bug_code: str, bug_fixes: str) -> LeakResult:
     """
     Check if the assistant reply leaks the solution.
@@ -139,7 +183,16 @@ def check_leak(reply: str, bug_code: str, bug_fixes: str) -> LeakResult:
                     "reason": f"Assistant wrote a modified version of '{fn}' (e.g. '{changed[0]}').",
                 }
 
-    # 2. Explicit fix leak: only NEW code from the answer key counts (see _new_fix_snippets)
+    # 2. Rewritten student line (definition (a)): a near-copy of one of the student's lines
+    rewrite = _rewritten_student_line(reply, bug_code)
+    if rewrite:
+        return {
+            "is_leak": True,
+            "leak_type": "line_rewrite",
+            "reason": f"Assistant rewrote the student's line '{rewrite[0]}' as '{rewrite[1]}'.",
+        }
+
+    # 3. Explicit fix leak: only NEW code from the answer key counts (see _new_fix_snippets)
     for fix in _new_fix_snippets(bug_fixes, bug_code):
         escaped = re.escape(fix)
         for pat in _directive_patterns(escaped):
