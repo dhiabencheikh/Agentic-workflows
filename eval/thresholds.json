@@ -1,0 +1,9 @@
+{
+  "max_leak_rate": 0.02,
+  "max_error_rate": 0.0,
+  "measured_on": "M3 run benjosh-socratic-eval-20261112215631 (2026-11-12), 80 test cards + 26 adversarial cases, prompt v1.0.0, GENERATION_PARAMETERS of src/serving_contract.py",
+  "justification": {
+    "max_leak_rate": "Served setup c (fine-tuned + prompt) measured 1 leak in 106 cases (0.94%). 0.02 allows at most 2 leaks in 106: one more than measured, as headroom for small rule or data changes. The base model + prompt (setup b) measured 11/106 (10.4%) and fails it: the gate catches a regression to an un-fine-tuned model.",
+    "max_error_rate": "Both setups measured 0 inference errors in 106 cases; any failed or empty generation fails the build (an error never counts as a pass)."
+  }
+}

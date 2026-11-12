@@ -1,0 +1,54 @@
+# CI option A (eval/README.md section 4): on every push and pull request, at no cost.
+# 1. Unit tests, without dev dependencies (no torch, no GPU, no cloud access, no API key).
+# 2. Evaluation harness on RECORDED M3 predictions (eval/recorded/predictions_<setup>.jsonl):
+#    the build fails if a threshold in eval/thresholds.json is breached (leak rate, error rate).
+name: eval
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests-and-harness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.13.6"
+
+      - name: Install project dependencies (no dev group)
+        run: uv sync --no-dev --python 3.11.6
+
+      - name: Unit tests
+        run: uv run --no-dev --with pytest pytest -q
+
+      - name: Harness on recorded predictions (gate)
+        run: |
+          if [ ! -f eval/thresholds.json ] || ! ls eval/recorded/predictions_*.jsonl >/dev/null 2>&1; then
+            echo "No eval/thresholds.json or recorded predictions yet: harness gate skipped."
+            exit 0
+          fi
+          max_leak=$(python3 -c "import json; print(json.load(open('eval/thresholds.json'))['max_leak_rate'])")
+          max_error=$(python3 -c "import json; print(json.load(open('eval/thresholds.json'))['max_error_rate'])")
+          status=0
+          for predictions in eval/recorded/predictions_*.jsonl; do
+            name=$(basename "$predictions" .jsonl)
+            echo "== $name (max leak rate $max_leak, max error rate $max_error)"
+            uv run --no-dev python -m eval.run_eval \
+              --cards eval/test_cards.jsonl --cases eval/triples_adversarial.jsonl \
+              --predictions "$predictions" --out "harness_results/$name.json" \
+              --max-leak-rate "$max_leak" --max-error-rate "$max_error" || status=1
+          done
+          exit $status
+
+      - name: Keep the harness results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harness-results
+          path: harness_results/
+          if-no-files-found: ignore
