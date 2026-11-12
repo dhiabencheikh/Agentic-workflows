@@ -5,6 +5,7 @@ description = "Socratic tutor for beginner Python debugging, fine-tuned with LoR
 readme = "README.md"
 requires-python = ">=3.11.6"
 dependencies = [
+    "chainlit>=2.12.0",
     "datasets>=4.2.0",
     "fsspec>=2025.9.0",
     "gcsfs>=2025.9.0",
