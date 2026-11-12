@@ -137,3 +137,41 @@ Recorded for later milestones (CLAUDE.md section 8): M3 three setups (base witho
 
 **Exam-style question:** Why compare the Vertex output with a local run instead of trusting the green tick in the console?
 **Answer:** A green tick only says the code ran without error. Comparing outputs proves the cloud run used the same data, parameters and code as the version we tested; here the files were identical, so the 20 unit tests and the notebook figures also describe what M2 will train on.
+
+## 2026-11-12 · M2 · Fine-tuning: preparation and smoke runs
+
+**In plain words:** before paying for a full GPU training run, we checked everything that can be checked for free on the laptop, then ran a short paid "smoke" run on the hardest cards to prove the training fits on a T4 and to measure how long each part takes.
+
+**Class link:** Session 3 slides 4 (validation, over-fitting), 6 (quantization), 7-11 (LoRA), 12 (hyper-parameters). Practice 3 section 1. Concepts 16 to 20 in [concepts.md](concepts.md).
+
+**Other course link:** Neural Networks (backpropagation, learning rate, batch size, epochs, training and validation curves).
+
+**What we built:**
+- Pinned training libraries: transformers 4.46.3, peft 0.13.2 (serving image), trl 0.12.2 (the release declaring `transformers<4.47`), bitsandbytes 0.47.0
+- Checks on the M1 data ([results/m2_finetuning_prep.md](results/m2_finetuning_prep.md)): no card over 2304 tokens; the completion-only collator grades exactly the final tutor reply plus `<|end|>` on 665 of 665 cards (median 2.5% of tokens); LoRA r=8 trains 12,582,912 parameters (0.33%)
+- QLoRA component (4-bit NF4, fp16, completion-only loss, middle compression, best checkpoint by validation loss, per-phase timings), 7 CPU tests on a tiny Phi-3
+- Pipeline modes `smoke` (20 updates, 40 longest cards) and `full`; report script `scripts/pipeline_job_report.py`
+
+**Result (smoke run `benjosh-socratic-tutor-20261112173302`, [results/m2_smoke_run.md](results/m2_smoke_run.md)):**
+
+| Phase (times UTC) | Duration |
+|---|---|
+| Provisioning, machine + GPU (16:34:07 to 16:35:37) | 90 s |
+| Container, image, pip install | 44 s |
+| Tokenizer, data, model download, quantization, LoRA | 49 s |
+| Training, 20 updates + 2 validations | 1,385 s |
+| Final evaluation + save | 83 s |
+| Whole step | 1,688 s (28.1 min) |
+
+61.4 s per update (validation excluded), 77.6 s per validation of 99 cards, peak GPU memory 11.18 GB of 16 GB, 0 NaN. Validation loss 1.60 at update 10, 1.80 at update 20 (8 passes over 40 cards: over-fitting, as expected; the update-10 checkpoint was kept). The regenerated data was byte-identical to M1.
+
+**Problems hit and fixes:**
+- **First smoke attempt waited about an hour for a GPU.** Pipeline `model-training-pipeline-20261112163043`: the fine-tuning step started at 15:30:46 UTC on `n1-standard-16` + T4, the console showed "Resources are insufficient in region: europe-west2", and the job never trained; Dhia cancelled it at 16:31:19 UTC. Two other teams' T4 jobs were waiting at the same time: the region had no free T4. Fix: smaller machine `n1-standard-8` + T4 (8 CPU / 30 GB; the Phi-3 weight files total 7.64 GB), and the second attempt got its GPU 90 s after the job was created. A smaller machine does not create GPUs; the wait depends on demand in the region.
+- **Lesson for M5 (serving and the demo):** an endpoint also needs a T4 in europe-west2 and takes 15 to 30 minutes to deploy when one is free. Deploy it well before the demo, check that it answers, and keep a fallback (for example a recorded demo or the OpenAI route of M6), since the endpoint is billed per hour while it is up.
+- TRL 0.12.2 defaults `max_seq_length` to 1024 when unset and cuts the end of longer cards, which would remove the reply on 55 train cards: always set explicitly (2304).
+- Renaming the pipeline reset Vertex's cache, so the data step ran again (62 s); its output was byte-identical.
+- Report script fixes: Cloud Logging can return empty pages with a "next page" token; Vertex service lines carry `task_name=service`; the pipeline did not record its GPU job, found instead through the run's billing label; one validation line was missing from the logs, so the validation count now comes from `training_info.json`.
+- Timestamps: the console shows Paris time (UTC+1), the reports UTC; now always labelled.
+
+**Exam-style question:** Why run 20 updates on the 40 longest cards before the full run, rather than on 40 random cards?
+**Answer:** GPU memory and time per update grow with sequence length. If the longest cards fit (11.18 GB of 16 GB here), every card fits; and the measured 61.4 s per update is an upper bound, so the full-run cost computed from it is conservative.

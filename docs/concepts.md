@@ -30,6 +30,11 @@ Each entry has the same parts:
 | 13 | [Data cleaning: deduplication and attribution](#13-data-cleaning-deduplication-and-attribution) | M1 | Session 2 slide 22 |
 | 14 | [Prompt versioning and prompt drift](#14-prompt-versioning-and-prompt-drift) | M1 (used in M3-M7) | Syllabus LO5, Session 1 slides 18, 20 |
 | 15 | [Pinning the model revision](#15-pinning-the-model-revision) | M1 (used in M2-M5) | Session 1 slide 21 |
+| 16 | [Overfitting and the validation set](#16-overfitting-and-the-validation-set) | M2 | Session 3 slide 4 |
+| 17 | [QLoRA: quantization + LoRA](#17-qlora-quantization--lora) | M2 | Session 3 slides 6-11 |
+| 18 | [Completion-only loss](#18-completion-only-loss) | M2 | NEW (Session 2 slide 19 states the idea) |
+| 19 | [Training hyper-parameters and the GPU step](#19-training-hyper-parameters-and-the-gpu-step) | M2 | Session 3 slide 12, Practice 3 |
+| 20 | [Context compression](#20-context-compression) | M2 (used in M3-M5) | Syllabus LO7 |
 
 ---
 
@@ -428,4 +433,129 @@ Pinning a revision is like citing a book's edition and page instead of just its 
 **Check yourself.** The fine-tuning step loads Phi-3 without a revision, serving loads it with one. What can go wrong?
 <details><summary>Answer</summary>
 If `main` changed between the two, the LoRA adapter would be trained on one set of base weights (or template) and applied to another. The adapter's learned corrections assume the original weights, so quality can drop silently.
+</details>
+
+---
+
+## 16. Overfitting and the validation set
+
+**In plain words.**
+A student who memorises last year's exam answers looks perfect on those questions and fails new ones.
+Training loss always goes down; the question is whether the loss on cards the model never trains on (validation loss) also goes down. When it stops falling and rises, the model is memorising: stop there.
+
+**How it works.**
+- Every 10 updates, the trainer computes the loss on the 99 validation cards (problems 1, 9, 18, 20, never trained on).
+- `load_best_model_at_end=True` with `metric_for_best_model="eval_loss"`: the saved adapter is the checkpoint with the lowest validation loss, not the last one.
+- Both curves go to TensorBoard (`report_to=["tensorboard"]`, `logging_dir` = the component's metrics path).
+- **A low validation loss does not prove Socratic behaviour.** Loss measures how well the model predicts the human tutor's exact words. A model can score a good loss and still leak a fix on some cards, or ask a question that is fluent but useless. That is why M3 measures behaviour directly: leak checks, similarity to the best reference, and an LLM judge of Socratic quality.
+
+**In this course.** Session 3 slide 4: "you need to be sure your model is fitting, but not over-fitting! For this you need a validation dataset, and regular evaluation along the epochs that can be visualized. Remember to log key hyper-parameters". Practice 3 section 1 steps 2, 3, 6.
+
+**Seen before.** Neural Networks: training and validation curves, early stopping (details to confirm).
+
+**Check yourself.** The fine-tuned model has a lower validation loss than the base model. Can you claim it is a better Socratic tutor?
+<details><summary>Answer</summary>
+No. Validation loss only says it predicts the human tutors' words better. Being a good Socratic tutor means not leaking fixes and asking useful questions, which must be measured on generated replies (M3), and the base model with the system prompt must be compared on the same cards.
+</details>
+
+---
+
+## 17. QLoRA: quantization + LoRA
+
+**In plain words.**
+Two tricks combined so a 3.8-billion-parameter model can be fine-tuned on one T4 GPU (16 GB):
+1. **Quantization:** store the frozen model in 4 bits per number, like a compressed JPEG instead of a raw photo: much smaller, nearly the same.
+2. **LoRA:** do not retrain the textbook; add thin sticky notes to some pages and train only the notes.
+
+**How it works.**
+- Quantization: `BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=True, bnb_4bit_compute_dtype=torch.float16)`. NF4 is a 4-bit format suited to weights that follow a bell curve; double quantization also compresses the scaling constants. Calculations run in fp16 because **T4 GPUs have no native bf16** (the article used float32).
+- `prepare_model_for_kbit_training(model)`: before adding LoRA to a quantized model, it (1) freezes all base weights, (2) casts the few small non-quantized layers, such as layer norms, to float32 for numerical stability (the article measured the footprint going from 2206 MB to 2651 MB because of this), and (3) enables gradient checkpointing, which recomputes activations during the backward pass instead of storing them, saving memory at the cost of time.
+- LoRA: for a frozen weight W (d_out x d_in), learn B (d_out x r) and A (r x d_in). The layer uses **W' = W + (alpha / r) x BA**: alpha / r scales the update. With r = 8 and alpha = 16 the scale is 2.0 (measured: `scaling alpha/r = 2.0` in `docs/results/m2_finetuning_prep.md`).
+- Example measured on Phi-3 layer 0 `qkv_proj`: W is (9216, 3072) = 28,311,552 numbers; A is (8, 3072) and B is (9216, 8) = 98,304 numbers.
+- Our config: r = 8, alpha = 16, dropout 0.05, targets `o_proj, qkv_proj, gate_up_proj, down_proj` (attention and feed-forward projections). Measured: **12,582,912 trainable parameters of 3,833,662,464 (0.33%)**.
+- Output: only the adapter (A and B for every targeted layer) plus a config, saved next to the tokenizer and `training_info.json`.
+- B starts at zero, so at step 0 the model is exactly the base model.
+
+**In this course.** Session 3 slide 6 (quantization trade-off), slides 7-10 (backpropagation cost, intrinsic rank "d*d > 2*d*r", W' = W + BA, merge at inference), slide 11 (rank, target modules, alpha, task type). Practice 3 section 1 step 4.
+
+**Seen before.** Neural Networks: backpropagation, fine-tuning. LoRA and quantization themselves: likely NEW (to confirm).
+
+**In our repo.** [fine_tuning_component.py](../src/pipeline_components/fine_tuning_component.py), hyper-parameters in [constants.py](../src/constants.py), counts in [m2_finetuning_prep.md](results/m2_finetuning_prep.md).
+
+**Check yourself.** You double r from 8 to 16 and keep alpha = 16. What happens to the number of trainable parameters and to the scale of the update?
+<details><summary>Answer</summary>
+Trainable parameters double (each A and B gets twice as many rows or columns). The scale alpha / r halves from 2.0 to 1.0, so each unit of BA counts half as much; this is why people often keep alpha = 2r when changing r.
+</details>
+
+---
+
+## 18. Completion-only loss
+
+**In plain words.**
+Each card is long and its answer is short. If the model is graded on every token, almost all its effort goes into predicting problem statements and student messages, and it partly learns to talk like a confused student. We grade only the tutor's final reply.
+
+**How it works.**
+- Each token has a label = the token the model should predict there. Context tokens get label -100, which means "do not grade".
+- TRL 0.12.2 `DataCollatorForCompletionOnlyLM(response_template="<|assistant|>")` masks every label up to the **last** `<|assistant|>` marker, so only the final tutor reply and its `<|end|>` are graded. It cannot be combined with packing.
+- Measured on the real data: **665 of 665** train and validation cards grade exactly the final reply plus `<|end|>`; median share of graded tokens **2.5%** (min 0.2%, max 19.1%). Without masking, 100% of tokens would be graded.
+- Grading `<|end|>` teaches the model to stop: `<|end|>` (id 32007) is one of Phi-3's stop tokens in its `generation_config.json`.
+- Padding uses `<unk>`: Phi-3's default pad token is `<|endoftext|>`, the same as its end-of-text token, and padded positions are not graded.
+- The validation loss is computed the same way, so it also measures only tutor replies.
+- The course article does not mask: it shows labels "exactly the same as the inputs". Fine for one-sentence Yoda prompts, wrong for our long cards.
+
+**In this course.** NEW in implementation. Session 2 slide 19 states the principle: SFT trains "only on the output tokens".
+
+**Seen before.** Masked losses in sequence models (Neural Networks or Generative AI I, to confirm).
+
+**Check yourself.** Why does the collator mask up to the LAST `<|assistant|>` and not the first?
+<details><summary>Answer</summary>
+A card contains earlier tutor turns as context. Masking only up to the first marker would also grade those earlier replies, which already appear as targets of their own cards, so they would be learned several times; the card's own target is the final reply.
+</details>
+
+---
+
+## 19. Training hyper-parameters and the GPU step
+
+**In plain words.**
+Learning rate is the size of each correction, batch size is how many cards are graded before each correction, epochs is how many times the model sees the training set. Too big or too many and the model memorises or becomes unstable; too small and it barely changes.
+
+**How it works.**
+- One dictionary, `FINE_TUNING_HYPERPARAMETERS` in `constants.py`, passed to the component, logged to Vertex as metrics and saved in `training_info.json`.
+- Starting values: learning rate 3e-4 (article), 3 epochs (article: 10, on shorter data), batch 2 per device x 8 accumulation steps = 16 cards per update, `max_seq_length` 2304 (above the longest card, 2066 tokens), validation every 10 updates.
+- **Trap found in TRL 0.12.2**: if `max_seq_length` is not set, it defaults to `min(model_max_length, 1024)` and cuts the END of longer cards, which is exactly the reply we want to teach. 55 train cards are over 1024 tokens.
+- GPU step: `set_accelerator_type("NVIDIA_TESLA_T4")`, `set_cpu_limit("16")`, `set_memory_limit("50G")`, image `pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel`. Optimizer `paged_adamw_8bit`, fp16 mixed precision.
+- Caching: Vertex reuses the data step output when its inputs are unchanged (`enable_caching=True`).
+- Smoke run before the full run: 20 updates on the 40 longest cards (worst case for memory) to check that it fits and to measure seconds per update. The full run cost is then measured time x the official hourly price.
+
+**In this course.** Session 3 slide 12 (learning rate, batch size, epochs). Practice 3 section 1 ("Adding it to the pipeline", "Checking the results"). Session 2 slide 25 (caching).
+
+**Seen before.** Neural Networks: learning rate, batch size, epochs.
+
+**Check yourself.** Why are the smoke run's cards the LONGEST ones rather than a random sample?
+<details><summary>Answer</summary>
+GPU memory grows with sequence length. If the longest cards fit, every card fits; the measured seconds per update is also an upper bound, so the cost estimate for the full run is conservative.
+</details>
+
+---
+
+## 20. Context compression
+
+**In plain words.**
+A card or a live conversation can outgrow the model's window. Cutting the start would remove the instructions, the problem and the code; cutting the end would remove the question being answered. We remove the oldest middle exchanges instead, like skipping the middle pages of a meeting's minutes while keeping the agenda and the latest decisions.
+
+**How it works.**
+- `fit_to_length` in the fine-tuning component: while the rendered card is longer than `max_seq_length`, delete the oldest tutor + student pair after the first student message (so roles keep alternating). Keeps: system prompt, problem + buggy code, recent turns, target.
+- If even system + first message + last student turn + target do not fit, the card is dropped and counted.
+- At 2304 tokens, no training or validation card needs it (measured). It is a safety net now and will matter in M3 and M5, where live conversations can grow.
+- A more advanced version replaces the removed middle with a short summary (LO7 "context compression via summarisation"), at the cost of an extra model call.
+
+**In this course.** Syllabus learning outcome 7 (context compression). Not in the practice: NEW.
+
+**Seen before.** Generative AI I: RAG and context windows (to confirm).
+
+**In our repo.** `fit_to_length` in [fine_tuning_component.py](../src/pipeline_components/fine_tuning_component.py); tests `test_long_cards_are_compressed_in_the_middle_never_at_the_ends`, `test_a_card_that_cannot_fit_even_compressed_is_dropped_and_counted`.
+
+**Check yourself.** Why does the compression delete messages in pairs?
+<details><summary>Answer</summary>
+Chat templates expect user and assistant turns to alternate. Deleting one message would put two student or two tutor messages in a row, a format the model never saw in training.
 </details>
