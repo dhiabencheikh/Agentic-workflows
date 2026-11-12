@@ -231,3 +231,5 @@ benjosh-socratic-eval.json
 eval/results.json
 # TensorBoard logs downloaded from runs
 logs/
+# Evaluation runner output (regenerated; real results go to docs/results/)
+eval/results.json
