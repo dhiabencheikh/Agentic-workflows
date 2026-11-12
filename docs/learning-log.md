@@ -251,3 +251,12 @@ Recorded for later milestones (CLAUDE.md section 8): M3 three setups (base witho
 ## 2026-11-12 · M5 · Endpoint deployed and checked
 
 **Result:** retry deployed the registered model to endpoint `298550392290017280` (attempt started 21:35:12, deployed 21:51:14 UTC, n1-standard-8 + T4, europe-west2). Quick test: a Socratic reply without the fix ("Sure. Can you explain what the for loop is doing?"), prompt v1.0.0, identical on two identical requests, round trip 3.8 s then 1.5 s. On 5 M3 test cases the endpoint's replies were **identical, word for word, to the M3 setup c predictions**: the served system is the evaluated one (same adapter, prompt, decoding, precision, GPU type).
+
+## 2026-11-12 · M7 · Tracing fix and replayed traffic
+**In plain words:** Langfuse had stored our messages, but filed them all inside one long-running web-server folder, so they looked missing. Each message now opens its own trace. Then we sent the 106 eval cases through the same code the app uses, to fill the dashboard with real traffic.
+**Class link:** Session 5, Langfuse traces, spans and generations; operational metrics (latency, error rate).
+**Other course link:** MLOps & Production Model Deployment (monitoring dimensions and alert thresholds).
+**What we built:** `src/app/turn.py` (one turn: input guardrail, traced model call, output guardrail), `scripts/replay_traffic.py`, `docs/results/m7_traffic_replay.{md,csv}`.
+**Result:** 106 turns, 0 errors; end-to-end P50 1.47 s, P95 2.68 s, P99 6.48 s, max 17.42 s (a 256-token reply). 9 injections blocked at input, the 10th blocked at output. Judge not run (OpenRouter key).
+**Problem hit and fix:** spans were children of the FastAPI WebSocket span; fix = fresh trace id per message plus blocking the `fastapi` scope.
+**Exam-style question:** Why is P99 on 106 requests a weak estimate? **Answer:** it rests on the one or two slowest values, so one outlier moves it a lot; report it with n and the max.

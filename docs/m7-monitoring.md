@@ -34,7 +34,19 @@
 | span `tutor-turn` | raw student message | reply shown to the student | level ERROR if the call fails |
 | generation `endpoint-generation` (nested) | server-side system prompt + conversation (chat messages; the Phi-3 template is applied inside the endpoint) | raw prediction (response, token counts, latency, prompt version, model info) | model name, `model_parameters` = `GENERATION_PARAMETERS`, deployed model id and version, prompt version, region, server and round-trip latency, token usage |
 
-Chainlit's own OpenTelemetry scope is blocked (`Langfuse(blocked_instrumentation_scopes=["chainlit"])`).
+Blocked OpenTelemetry scopes: `chainlit` and `fastapi` (`Langfuse(blocked_instrumentation_scopes=["chainlit", "fastapi"])`).
+Each student message starts a fresh trace (`new_trace` in `src/app/tracing.py`).
+
+**Bug found and fixed on 2026-11-12:** about 12 messages sent from Chainlit showed as 1 trace. ClickHouse showed
+all 40 `tutor-turn` spans stored, but as children of the web server's long-lived `WS /ws/socket.io/{path}` span
+(scope `fastapi`): a whole conversation was one trace, buried among socket.io spans. Fix: a fresh trace id per
+message plus blocking the `fastapi` scope. Checked by sending a message through the app: 1 trace, 2 observations,
+no web-server spans.
+
+Turn logic (input guardrail, traced model call, output guardrail) lives in `src/app/turn.py`, shared by the
+Chainlit app and `scripts/replay_traffic.py`, so the replayed traffic follows the demo path exactly. A blocked input
+is logged as a `guardrail-block` trace (no model call); a blocked output adds an `output-guardrail-block` trace
+(a separate trace for now, so 106 turns gave 107 traces).
 SDK pinned to 3.15.0: the version whose API the practice uses (5.2.0 removed `blocked_instrumentation_scopes`
 and `start_as_current_generation`).
 
@@ -47,6 +59,21 @@ and `start_as_current_generation`).
 | Trace count | traces | by hour | none (volume) |
 | Tokens | sum of input / output tokens | by hour | none |
 | Judge scores (after section 5) | mean `socratic_quality`, sum `leak` | by day | mean < 4 or any leak = 1 |
+
+### Measured traffic (2026-11-12 23:53 to 23:55 UTC, `docs/results/m7_traffic_replay.md`)
+
+The 106 eval cases (80 test + 26 adversarial) sent one at a time through `src/app/turn.py` to endpoint
+`298550392290017280`. Stored in Langfuse (ClickHouse count): 97 `tutor-turn` + 97 `endpoint-generation`,
+9 `guardrail-block`, 1 `output-guardrail-block`.
+
+| Measure | Value |
+|---|---|
+| Errors | 0 / 106 |
+| End-to-end latency, all 106 turns | P50 1.47 s, P95 2.68 s, P99 6.48 s, max 17.42 s |
+| End-to-end latency, 97 turns that called the model | P50 1.54 s, P95 2.68 s, max 17.42 s |
+| Slowest turn | `adv-off_topic-01`, 17.4 s: 256 output tokens, the generation cap |
+| Outcomes | 96 answered, 9 blocked at input (prompt injections), 1 blocked at output (`adv-prompt_injection-03`) |
+| Judge score distribution | **not available**: judge not run (section 5) |
 
 Cost per call: **not computable yet**. The endpoint is billed per hour while deployed, not per token, so cost per
 call = hourly endpoint price / calls per hour; the hourly price will come from Billing > Reports (label
@@ -73,5 +100,9 @@ read 2026-11-12, USD per 1M tokens (gpt-4o-mini 0.15 in / 0.60 out; gpt-4.1-mini
 | gpt-4.1-mini | $0.00096 / $0.00115 | $0.00186 | $0.122 |
 | gpt-4o | $0.00601 / $0.00721 | $0.01160 | $0.764 |
 
-The judge has not been calibrated against human labels yet (to do: run it on the human replies and the known leaks
-of `eval/fixtures/`, as for the deterministic leak check).
+**Status 2026-11-12: not enabled.** The `OPENAI_API_KEY` in `.env` is an OpenRouter key (`sk-or-`): OpenAI rejects it
+(401 in `scripts/calibrate_judge.py`). To enable: a real OpenAI key in Langfuse's LLM connection, or an OpenRouter
+connection (OpenAI-compatible) after checking its gpt-4o-mini price. Existing traces are not scored (new traces only).
+
+The judge has not been calibrated against human labels yet (to do: `scripts/calibrate_judge.py`, 20 human replies
+and 10 known leaks from validation).
