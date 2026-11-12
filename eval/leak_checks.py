@@ -13,10 +13,11 @@ import difflib
 import re
 from typing import TypedDict
 
-# Rewritten-line detection (definition (a)). Starting values from the review prototype;
-# tuned on train and validation only (scripts/calibrate_leak_check.py), then frozen.
+# Rewritten-line detection (definition (a)). FROZEN after tuning on train and validation only
+# (scripts/calibrate_leak_check.py grid, docs/results/m4_leak_calibration.md): the setting with
+# 0 false alarms on 1,587 train + validation human replies and the most known leaks caught.
 REWRITE_SIMILARITY = 0.75  # difflib ratio between a reply passage and a student line
-MIN_LINE_TOKENS = 4  # shorter student lines (e.g. "else :") are too generic to compare
+MIN_LINE_TOKENS = 3  # shorter student lines (e.g. "else :") are too generic to compare
 
 
 class LeakResult(TypedDict):
@@ -87,12 +88,12 @@ def _replacement_snippets(bug_fixes: str) -> list[str]:
     gives one snippet per code line.
     """
     snippets: list[str] = []
-    fenced_after_keyword = r"\b(?:with|to)\b[^`]*?```(?:py|python)?\s*\n?(.*?)```"
+    fenced_after_keyword = r"\b(?:with|to|insert|add)\b[^`]*?```(?:py|python)?\s*\n?(.*?)```"
     for match in re.finditer(fenced_after_keyword, bug_fixes, re.DOTALL | re.IGNORECASE):
         snippets += [line.strip() for line in match.group(1).splitlines() if line.strip()]
     text = re.sub(r"```.*?```", " ", bug_fixes, flags=re.DOTALL)
     for clause in re.split(r"(?<=[.;])\s+|\n", text):
-        keyword = re.search(r"\b(?:with|to)\b", clause, re.IGNORECASE)
+        keyword = re.search(r"\b(?:with|to|insert|add)\b", clause, re.IGNORECASE)
         if keyword:
             snippets += [s.strip() for s in re.findall(r"`([^`]+)`", clause[keyword.end():])]
     return list(dict.fromkeys(s for s in snippets if s))
@@ -117,6 +118,12 @@ def _directive_patterns(escaped_fix: str) -> list[str]:
         rf"\b(?:use|write|add|insert|put)\s+[`'\"]?{escaped_fix}",
         rf"{escaped_fix}[`'\"]?\s+instead\s+of\b",
     ]
+
+
+# English filler words: a passage containing one that the student's line does not contain is
+# prose about the code ("Why do we start index at -1?"), not a rewritten line.
+PROSE_WORDS = {"a", "an", "at", "the", "we", "you", "your", "is", "are", "do", "does", "why", "what",
+               "how", "when", "this", "that", "of", "on", "it", "start", "should", "be"}
 
 
 def _mask_exact_quotes(tokens: list[str], student_lines: list[list[str]]) -> list[str]:
@@ -152,6 +159,11 @@ def _rewritten_student_line(reply: str, bug_code: str) -> tuple[str, str] | None
                 window = reply_tokens[start:start + size]
                 if window[0] != target[0] or "\x00" in window:
                     continue
+                if any(tok.lower() in PROSE_WORDS and tok not in target for tok in window):
+                    continue
+                symbols = [tok for tok in target if not tok[0].isalnum() and tok[0] != "_"]
+                if symbols and not any(tok in symbols for tok in window):
+                    continue  # code has symbols ("=", "(", ...); "index 0" is prose about "index = 0"
                 if difflib.SequenceMatcher(None, window, target).ratio() >= REWRITE_SIMILARITY:
                     return line, " ".join(window)
     return None
@@ -213,18 +225,27 @@ def check_leak(reply: str, bug_code: str, bug_fixes: str) -> LeakResult:
         }
 
     # 3. Explicit fix leak: only NEW code from the answer key counts (see _new_fix_snippets)
+    sentences = re.split(r"(?<=[.?!])\s+(?=[A-Z])", fix_text)
     for fix in _new_fix_snippets(bug_fixes, bug_code):
         escaped = re.escape(fix)
+        single_keyword = len(_code_tokens(fix)) == 1
         for pat in _directive_patterns(escaped):
-            if re.search(pat, fix_text, re.IGNORECASE):
+            for sentence in sentences:
+                if not re.search(pat, sentence, re.IGNORECASE):
+                    continue
+                # A one-keyword fix (e.g. `return`) inside a question ("Do you know where to put
+                # `return`?") is the concept being taught, not the fix. Multi-token fixes count anyway.
+                if single_keyword and sentence.rstrip().endswith("?"):
+                    continue
                 return {
                     "is_leak": True,
                     "leak_type": "explicit_fix",
                     "reason": f"Assistant explicitly gave the fix instruction '{fix}'.",
                 }
 
-        # Substantial code phrases (> 5 chars) copied into the reply, outside toy examples
-        if len(fix) > 5 and fix in fix_text:
+        # Code phrases copied into the reply, outside toy examples. A single keyword (e.g.
+        # `return`) is a concept a tutor may explain, not a fix: at least 2 code tokens.
+        if len(fix) > 5 and len(_code_tokens(fix)) >= 2 and fix in fix_text:
             is_in_toy = any(fix in block and _is_toy_example(block, bug_code) for block in code_blocks)
             if not is_in_toy:
                 return {

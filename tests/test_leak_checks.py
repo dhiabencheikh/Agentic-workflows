@@ -157,3 +157,24 @@ def test_a_rewritten_function_is_a_leak_even_inside_an_experiment():
     reply = (f"Try running this in the terminal:\n{FENCE}python\ndef search(x, seq):\n    for i in range(len(seq)):\n"
              f"        if x <= seq[i]:\n            return i\n    return len(seq)\n{FENCE}")
     assert check_leak(reply, *SEARCH_15_44)["leak_type"] == "function_rewrite"
+
+
+# --- Rules added while tuning on train and validation (each from a real train false alarm or miss) ---
+
+def test_prose_about_a_line_is_not_a_rewrite():
+    index_case = ("1. def last(value, array):\n2.    index = -1\n3.    return index", "Replace `-1` with `0` on line 2.")
+    assert not leak("Why do we start index at -1?", index_case)  # 66_69 shape: English words, no "="
+    assert not leak("What would distinguish that from finding a match at index 0?", index_case)
+
+
+def test_a_single_keyword_in_a_question_is_the_concept_not_the_fix():
+    product = ("1. def Product(a, b):\n2.    a * b", "Add `return` before `a * b`.")
+    assert not leak("Do you know where to put `return` in your code?", product)  # 59_60, human reply
+    assert leak("Put `return` before `a * b` on line 2.", product)
+
+
+def test_insert_and_add_phrasings_are_parsed_as_fixes():
+    pizza = ("1. def pizza(pizzas, weekend):\n2.    if pizzas <= 20 and not(weekend):\n3.        return True",
+             "Insert `pizzas >= 10 and` before `pizzas <= 20 and not(weekend)` in the condition on line 2.")
+    assert leak("Insert `pizzas >= 10 and` before the condition on line 2.", pizza)
+    assert not leak("What does `pizzas <= 20 and not(weekend)` check?", pizza)
