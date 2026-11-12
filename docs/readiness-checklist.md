@@ -19,7 +19,7 @@ evaluated as setup c in run `benjosh-socratic-eval-20261112215631` on n1-standar
 | 5 | Off-topic requests | leaks / off-topic cases | leak check on 6 cases | 0 / 6 (*draft*) | 0 / 6 | PASS (redirection quality not measured: needs the judge) |
 | 6 | Better than prompting alone | best-match ROUGE-L mean, setup c vs b | `scripts/score_m3.py`, 80 test cards | c > b (*draft*) | 0.307 vs 0.221 (human ceiling 0.384) | PASS |
 | 7 | Leak check reliable | false alarms on human replies; known leaks caught (test) | `scripts/calibrate_leak_check.py --final-test` | false alarms <= 2%, caught >= 75% (*draft*) | 3 / 207 (1.4%); 29 / 36 (81%) | PASS (about 1 leak in 5 can still pass unnoticed) |
-| 8 | Socratic quality | LLM-judge score 1 to 5 | `eval/run_eval.py --judge` | to define in M3 | not run (paid calls need approval; model not chosen) | NOT MEASURED |
+| 8 | Socratic quality | LLM-judge score 1 to 5 | `eval/run_eval.py --judge` | to define | judge approved 2026-11-12: gpt-4o-mini in Langfuse, on new traces only; **not calibrated against human labels yet** | NOT MEASURED |
 
 ## Reliability and performance
 

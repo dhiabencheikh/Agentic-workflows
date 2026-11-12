@@ -57,6 +57,7 @@ Every figure below comes from a committed results file (path given). Times are U
 - Implicit defaults: learning-rate schedule, and TRL's 1,024-token default that would have cut replies.
 
 ## 8. Not done / next
-- LLM judge for Socratic quality (needs approved paid calls), monitoring with Langfuse (M7), routing and caching (M6),
+- LLM judge for Socratic quality: approved (gpt-4o-mini in Langfuse, new traces only) but **not calibrated against human labels yet**;
+  routing and caching (M6, design only),
   cost per call (billing figures), a training run with warm-up and 2 epochs.
 - Readiness: see `docs/readiness-checklist.md` (fails: prompt-injection robustness, monitoring, endpoint availability).

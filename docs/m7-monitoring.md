@@ -47,7 +47,9 @@ Cost per call: **not computable yet**. The endpoint is billed per hour while dep
 call = hourly endpoint price / calls per hour; the hourly price will come from Billing > Reports (label
 `team=benjosh`). Judge calls add the OpenAI cost of section 5.
 
-## 5. LLM-as-a-judge (prompts in `eval/judge_prompts.py`) - NOT enabled yet, awaiting approval
+## 5. LLM-as-a-judge (prompts in `eval/judge_prompts.py`)
+
+Approved 2026-11-12: **gpt-4o-mini, on new traces only**. **Not calibrated against human labels yet**: its scores are indicative until checked on human tutor replies (should score high) and known leaks (should score low).
 
 1. Project settings > LLM connections > add OpenAI with the school API key.
 2. LLM-as-a-judge > default evaluator model: choose the approved model.
