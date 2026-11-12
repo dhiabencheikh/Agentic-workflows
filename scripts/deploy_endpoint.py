@@ -23,7 +23,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--model", required=True, help="registered model resource name")
     parser.add_argument("--endpoint", default=None, help="reuse an existing (empty) endpoint id instead of creating one")
-    parser.add_argument("--retries", type=int, default=3, help="retries when no T4 is available (503)")
+    parser.add_argument("--machine-type", default="n1-standard-8", help="fallback when no T4: g2-standard-8")
+    parser.add_argument("--accelerator", default="NVIDIA_TESLA_T4", help="fallback when no T4: NVIDIA_L4")
+    parser.add_argument("--retries", type=int, default=3, help="retries when no GPU is available (503)")
     parser.add_argument("--retry-wait", type=int, default=180, help="seconds between retries")
     args = parser.parse_args()
     aiplatform.init(project=PROJECT_ID, location=REGION)
@@ -38,11 +40,11 @@ def main() -> None:
     print("Deploying (15 to 30 min when a T4 is free); this command waits until it is done...")
     for attempt in range(1, args.retries + 2):
         try:
-            print(f"Attempt {attempt} at {time.strftime('%H:%M:%S', time.gmtime())} UTC")
+            print(f"Attempt {attempt} at {time.strftime('%H:%M:%S', time.gmtime())} UTC: {args.machine_type} + {args.accelerator}")
             model.deploy(
                 endpoint=endpoint,
-                machine_type="n1-standard-8",
-                accelerator_type="NVIDIA_TESLA_T4",
+                machine_type=args.machine_type,
+                accelerator_type=args.accelerator,
                 accelerator_count=1,
                 min_replica_count=1,
                 max_replica_count=1,
