@@ -15,6 +15,8 @@ Dhia is the project lead (MSc Data for Finance, Mines Paris PSL x Albert School)
 6. **Check the result together.** After each step, show what to look at (like the "Checking the results" sections of the practice guides) and what "good" looks like.
 7. **Log it.** Append an entry to `docs/learning-log.md` (template in section 9): the chronological story of what we did. Also add or update every concept covered in `docs/concepts.md`: the revision sheet Dhia rereads before the oral and the exam, organised by concept, not by date.
 8. **Visuals help.** Use Mermaid diagrams or small tables in explanations and in the learning log where they make a concept clearer.
+9. **Teamwork (Dhia and Saumya).** One branch per person per milestone (e.g. `m2-finetune`, `m4-eval-harness`). Every PR into `main` is reviewed by the other person before merging. Announce changes to shared files (`CLAUDE.md`, `src/constants.py`, `pyproject.toml`, `prompts/`, `eval/README.md`) before making them. Interfaces between people's work (test-case and predictions formats) are agreed in `eval/README.md` before either side codes against them.
+10. **Times.** Report timestamps in UTC and say so (Paris = UTC+1 in winter); the Cloud console shows local time.
 
 ### Style rules
 - **Never use em dashes** in any written output (code comments, docs, commit messages, slides).
