@@ -22,6 +22,8 @@ else:
     from src.app.tracing import traced_reply, tracing_enabled
     from src.constants import REGION
     from src.guardrail import SAFE_REPLY, check_input
+    from src.output_guardrail import SAFE_REPLY as SAFE_OUTPUT_REPLY
+    from src.output_guardrail import check_reply
 
     LANGFUSE = None
     if tracing_enabled():
@@ -82,5 +84,13 @@ async def on_message(message: cl.Message) -> None:
             LANGFUSE.flush()
         await cl.Message(content=f"Sorry, the tutor is unavailable right now ({type(error).__name__}).").send()
         return
+    verdict = check_reply(reply, history)
+    if verdict["blocked"]:  # output guardrail: the reply rewrites the student's code
+        if LANGFUSE:
+            with LANGFUSE.start_as_current_span(name="output-guardrail-block", input=reply,
+                                                output=SAFE_OUTPUT_REPLY, metadata=verdict):
+                pass
+            LANGFUSE.flush()
+        reply = SAFE_OUTPUT_REPLY
     history.append({"role": "assistant", "content": reply})
     await cl.Message(content=reply).send()
