@@ -225,3 +225,25 @@ Recorded for later milestones (CLAUDE.md section 8): M3 three setups (base witho
 
 **Exam-style question:** Why use a warm-up when fine-tuning with LoRA and Adam?
 **Answer:** At the start, the LoRA matrices are new (B = 0) and Adam has no gradient statistics yet, so the first full-size steps are taken on very little information. Ramping the learning rate up over the first updates lets those statistics settle before large steps, which makes the start of training smoother and less sensitive to the first few batches.
+
+## 2026-11-12 · M3 · Evaluation: fine-tuned vs base + prompt
+
+**In plain words:** the same 106 conversations were given to the base model with our system prompt (b) and to the fine-tuned model with the same prompt (c); only the LoRA adapter differs, so the difference is what fine-tuning adds.
+
+**Class link:** Session 3 slides 15-19 (string metrics, ROUGE, LLM judge), Session 4 slides 18-20 (generation parameters). Concepts 21 to 23.
+
+**What we ran:** `scripts/evaluation_runner.py --mode full --setups b,c` (launched by Dhia), run `benjosh-socratic-eval-20261112215631`; scored with `scripts/score_m3.py`. Results: [results/m3_eval.md](results/m3_eval.md), [results/m3_examples.md](results/m3_examples.md), figure `docs/figures/m3_b_vs_c.png`.
+
+**Result:** c vs b: best-match ROUGE-L 0.307 vs 0.221 (human ceiling 0.384); leaks on 80 test cards 0 vs 4; on 26 adversarial cases 1 vs 7 (prompt injection 1/10 vs 6/10); P95 generation latency 2.7 s vs 10.0 s; median reply 16 vs 30 tokens; 0 inference errors in 212 predictions. All 12 flagged replies read: all real leaks.
+
+**Problems hit:** setup b waited 20.9 min for a T4 (overhead 81% of its step), c 18 s; the single-step design would avoid one wait, not built tonight. Setup a (no prompt) and the LLM judge not run.
+
+**Exam-style question:** Why compare b and c rather than a (no prompt) and c? **Answer:** b and c differ only by the adapter, so the difference is attributable to fine-tuning; a to c changes the prompt and the adapter at once.
+
+## 2026-11-12 · M5 · First deployment attempt
+
+**In plain words:** the model was registered with our handler, but Google had no free T4 in europe-west2 for the endpoint.
+
+**What we ran:** registration (`projects/123905721265/locations/europe-west2/models/5118624650506534912`), deployment to endpoint `298550392290017280`: `503 Machine type temporarily unavailable` at 21:34 UTC. Retries added to the deploy script; fallbacks prepared (europe-west4 T4, europe-west2 L4, replay mode of recorded replies).
+
+**Problems hit and fixes:** the Chainlit app could not import `src` when started by Chainlit (fixed, both modes checked to serve HTTP 200); tests needing torch failed in a no-dev environment, which would have turned CI red after merging (now skipped with a stated reason; clean no-dev run 86 passed, 4 skipped).
