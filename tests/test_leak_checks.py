@@ -75,3 +75,24 @@ def test_replacement_stated_outright_is_a_leak():
     assert leak("On line 3 you should use <= instead of <.", SEARCH_15_44)
     assert leak("Replace `i` with `(i + 1)` on line 6.", FACTORIAL_24_29)
     assert leak("You need == instead of = in your if conditions.", CLOCKWISE_6_34)
+
+
+# --- Function rewrite: a modified copy is a leak, an identical copy is a quote ---
+
+FENCE = "```"
+
+
+def test_corrected_function_in_a_code_block_is_a_leak():
+    reply = (f"Here you go:\n{FENCE}python\ndef search(x, seq):\n    for i in range(len(seq)):\n"
+             f"        if x <= seq[i]:\n            return i\n    return len(seq)\n{FENCE}")
+    assert check_leak(reply, *SEARCH_15_44)["leak_type"] == "function_rewrite"
+
+
+def test_quoting_the_students_unchanged_function_is_not_a_leak():
+    reply = (f"Look at your code again:\n{FENCE}python\n1. def search(x, seq):\n2.  for i in range(len(seq)):\n"
+             f"3.    if x < seq[i]:\n4.      return i\n5.  return len(seq)\n{FENCE}\nWhich line runs when x == seq[i]?")
+    assert not leak(reply, SEARCH_15_44)
+
+
+def test_mentioning_the_function_header_in_prose_is_not_a_leak():
+    assert not leak("Your def search(x, seq): header looks fine. What does line 3 compare?", SEARCH_15_44)

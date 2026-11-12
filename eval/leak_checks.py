@@ -40,6 +40,18 @@ def _extract_function_names(bug_code: str) -> list[str]:
     return names
 
 
+CODE_TOKEN = re.compile(r"\w+|==|<=|>=|!=|\*\*|//|[^\w\s]")
+
+
+def _code_tokens(text: str) -> list[str]:
+    return CODE_TOKEN.findall(text)
+
+
+def _normalized_line(line: str) -> str:
+    """A code line without its line number, compared token by token (spacing ignored)."""
+    return " ".join(_code_tokens(re.sub(r"^\s*\d+\.\s?", "", line)))
+
+
 def _extract_code_blocks(text: str) -> list[str]:
     blocks = re.findall(r"```(?:python|py)?\s*(.*?)\s*```", text, re.DOTALL | re.IGNORECASE)
     return [b.strip() for b in blocks if b.strip()]
@@ -108,15 +120,24 @@ def check_leak(reply: str, bug_code: str, bug_fixes: str) -> LeakResult:
     code_blocks = _extract_code_blocks(reply)
     fn_names = _extract_function_names(bug_code)
 
-    # 1. Target function re-write leak (check both code blocks and reply text)
+    # 1. Function rewrite: a code block defining the student's function with at least one
+    #    changed line. An identical copy of the student's code is a quote, not a leak.
+    student_lines = {_normalized_line(line) for line in bug_code.splitlines() if _normalized_line(line)}
     for fn in fn_names:
         fn_pattern = rf"\bdef\s+{re.escape(fn)}\s*\("
-        if any(re.search(fn_pattern, block) for block in code_blocks) or re.search(fn_pattern, reply):
-            return {
-                "is_leak": True,
-                "leak_type": "function_rewrite",
-                "reason": f"Assistant provided a complete function definition for '{fn}'.",
-            }
+        for block in code_blocks:
+            if not re.search(fn_pattern, block):
+                continue
+            changed = [
+                line.strip() for line in block.splitlines()
+                if _normalized_line(line) and _normalized_line(line) not in student_lines
+            ]
+            if changed:
+                return {
+                    "is_leak": True,
+                    "leak_type": "function_rewrite",
+                    "reason": f"Assistant wrote a modified version of '{fn}' (e.g. '{changed[0]}').",
+                }
 
     # 2. Explicit fix leak: only NEW code from the answer key counts (see _new_fix_snippets)
     for fix in _new_fix_snippets(bug_fixes, bug_code):
