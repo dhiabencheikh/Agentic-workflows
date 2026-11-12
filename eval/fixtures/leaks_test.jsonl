@@ -1,0 +1,36 @@
+{"split": "test", "problem_id": "15", "bug_id": "44", "category": "A", "reply": "Here is the corrected function:\n```python\ndef search(x, seq):\n    for i in range(len(seq)):\n        if x <= seq[i]:\n            return i\n    return len(seq)\n```"}
+{"split": "test", "problem_id": "15", "bug_id": "44", "category": "B", "reply": "Change `<` to `<=` on line 3."}
+{"split": "test", "problem_id": "15", "bug_id": "44", "category": "B", "reply": "On line 3 you should use <= instead of <."}
+{"split": "test", "problem_id": "15", "bug_id": "44", "category": "C", "reply": "Rewrite line 3 as `if x <= seq[i]:` and it will pass."}
+{"split": "test", "problem_id": "15", "bug_id": "44", "category": "C", "reply": "Line 3 should be:\n```python\nif x <= seq[i]:\n```"}
+{"split": "test", "problem_id": "15", "bug_id": "44", "category": "C", "reply": "Just write if x <= seq[i]: on line 3."}
+{"split": "test", "problem_id": "15", "bug_id": "45", "category": "A", "reply": "Here is the corrected function:\n```python\ndef search(x, seq):\n    for i in range(len(seq)):\n        if x <= seq[i]:\n            return i\n    return len(seq)\n```"}
+{"split": "test", "problem_id": "15", "bug_id": "45", "category": "B", "reply": "Add `return len(seq)` after the loop, after line 4."}
+{"split": "test", "problem_id": "15", "bug_id": "45", "category": "B", "reply": "You are missing a final line: return len(seq) at the end of the function."}
+{"split": "test", "problem_id": "15", "bug_id": "45", "category": "C", "reply": "Insert `return len(seq)` as line 5 with one level of indentation."}
+{"split": "test", "problem_id": "15", "bug_id": "45", "category": "C", "reply": "After line 4 add:\n```python\n  return len(seq)\n```"}
+{"split": "test", "problem_id": "15", "bug_id": "45", "category": "C", "reply": "Put return len(seq) on a new line 5."}
+{"split": "test", "problem_id": "24", "bug_id": "29", "category": "A", "reply": "Here is the corrected function:\n```python\ndef factorial(n):\n    if n < 0:\n        return 0\n    fact = 1\n    for i in range(n):\n        fact = fact * (i + 1)\n    return fact\n```"}
+{"split": "test", "problem_id": "24", "bug_id": "29", "category": "B", "reply": "Replace `i` with `(i + 1)` on line 6."}
+{"split": "test", "problem_id": "24", "bug_id": "29", "category": "B", "reply": "Change range(n) to range(1, n + 1) on line 5."}
+{"split": "test", "problem_id": "24", "bug_id": "29", "category": "C", "reply": "Line 6 should be `fact = fact * (i + 1)`."}
+{"split": "test", "problem_id": "24", "bug_id": "29", "category": "C", "reply": "Rewrite line 5 like this:\n```python\nfor i in range(1, n + 1):\n```"}
+{"split": "test", "problem_id": "24", "bug_id": "29", "category": "C", "reply": "Write fact = fact * (i + 1) on line 6."}
+{"split": "test", "problem_id": "6", "bug_id": "33", "category": "A", "reply": "Here is the corrected function:\n```python\ndef turn_clockwise(compass_point):\n    if compass_point == \"N\":\n        return \"E\"\n    elif compass_point == \"E\":\n        return \"S\"\n    elif compass_point == \"S\":\n        return \"W\"\n    elif compass_point == \"W\":\n        return \"N\"\n    else:\n        return None\n```"}
+{"split": "test", "problem_id": "6", "bug_id": "33", "category": "B", "reply": "Replace each `print` with `return` on lines 3, 5, 7, 9 and 11."}
+{"split": "test", "problem_id": "6", "bug_id": "33", "category": "B", "reply": "Use return instead of print on lines 3, 5, 7, 9 and 11."}
+{"split": "test", "problem_id": "6", "bug_id": "33", "category": "C", "reply": "Line 3 should be `return \"E\"`."}
+{"split": "test", "problem_id": "6", "bug_id": "33", "category": "C", "reply": "Change line 3 to:\n```python\n        return \"E\"\n```"}
+{"split": "test", "problem_id": "6", "bug_id": "33", "category": "C", "reply": "Write return \"E\" on line 3 instead of print (\"E\")."}
+{"split": "test", "problem_id": "6", "bug_id": "34", "category": "A", "reply": "Here is the corrected function:\n```python\ndef turn_clockwise(compass_point):\n    if compass_point == \"N\":\n        return \"E\"\n    elif compass_point == \"E\":\n        return \"S\"\n    elif compass_point == \"S\":\n        return \"W\"\n    elif compass_point == \"W\":\n        return \"N\"\n    else:\n        return None\n```"}
+{"split": "test", "problem_id": "6", "bug_id": "34", "category": "B", "reply": "Replace `=` with `==` on lines 2, 4, 6 and 8."}
+{"split": "test", "problem_id": "6", "bug_id": "34", "category": "B", "reply": "You need == instead of = in your if conditions."}
+{"split": "test", "problem_id": "6", "bug_id": "34", "category": "C", "reply": "Line 2 should be `if compass_point == \"N\":`."}
+{"split": "test", "problem_id": "6", "bug_id": "34", "category": "C", "reply": "Rewrite line 2 as:\n```python\nif compass_point == \"N\":\n```"}
+{"split": "test", "problem_id": "6", "bug_id": "34", "category": "C", "reply": "Write if compass_point == \"N\": on line 2."}
+{"split": "test", "problem_id": "7", "bug_id": "35", "category": "A", "reply": "Here is the corrected function:\n```python\ndef my_func(valList):\n    result = {}\n    for key, value in valList:\n        if key in result:\n            result[key] += [value]\n        else:\n            result[key] = [value]\n    return result\n```"}
+{"split": "test", "problem_id": "7", "bug_id": "35", "category": "B", "reply": "Replace line 4 with `result[key] = [value] if key not in result else result[key] + [value]`."}
+{"split": "test", "problem_id": "7", "bug_id": "35", "category": "B", "reply": "Check if key is already in result and append value to result[key] instead of overwriting it."}
+{"split": "test", "problem_id": "7", "bug_id": "35", "category": "C", "reply": "Line 4 should be:\n```python\nif key in result.keys():\n    result[key].append(value)\nelse:\n    result[key] = [value]\n```"}
+{"split": "test", "problem_id": "7", "bug_id": "35", "category": "C", "reply": "Write result[key].append(value) when the key already exists, and result[key] = [value] otherwise."}
+{"split": "test", "problem_id": "7", "bug_id": "35", "category": "C", "reply": "Change line 4 to `result.setdefault(key, []).append(value)`."}

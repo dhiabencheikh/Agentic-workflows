@@ -108,3 +108,9 @@ Don't launch Vertex pipelines, GPU jobs or endpoints. They cost money, and the c
 Never put secrets (the OpenAI key) in the bucket or in Git. Only .env holds them, and Git ignores it.
 6. Course context
 These are the course slides and practice guides (Sessions 1 to 5) and the syllabus. M4 isn't covered in the practice guides: it's project-only work (see the table in CLAUDE.md section 4). Ask Dhia for the course folder if you need it.
+7. Corrections (2026-11-12, after the handover was sent)
+- Branch m2-finetune is on GitHub since 2026-11-12, as draft PR #3. Read it, don't work on it.
+- uv run adds the dev group back unless told not to. Use --no-dev on every uv run (or set UV_NO_DEV=1 in your shell profile). Test command: uv run --no-dev --with pytest pytest tests/test_leak_checks.py. Once M2 is merged, the dev group includes torch, which you must not install.
+- The bucket gs://benjosh-llmops is EU multi-region. europe-west2 is the region where jobs and GPUs run.
+- Calibration: tune the leak rules on the human replies of train + validation (train_dataset and validation_dataset in the same bucket folder: 665 replies plus their alternatives). Report the final calibration figure on the 80 test replies (plus alternatives), which must not be used for tuning: same train / validation / test logic as for models.
+- Test-case and predictions formats are defined in eval/README.md (to agree on before coding against them).

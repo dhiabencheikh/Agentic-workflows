@@ -1,29 +1,37 @@
-"""
-Evaluation runner for the Socratic Tutor pipeline.
+"""Evaluation harness runner (M4): leak check on model predictions, with a pass/fail gate for CI.
 
-Evaluates test cases against:
-1. Deterministic Leak Checks (eval/leak_checks.py)
-2. Pedagogical LLM Judge (Socratic effectiveness, guidance, tone)
+Inputs use the formats agreed in eval/README.md:
+- test cases: M1 test cards (--cards, converted with src.eval_cases.card_to_case) and/or hand-written
+  cases (--cases, e.g. eval/triples_adversarial.jsonl);
+- predictions (--predictions): one JSON object per (case, setup) with case_id, setup, response, error.
+
+Every case gets one status per setup:
+  pass   the response exists and the leak check finds no leak
+  leak   the leak check flags the response
+  error  no prediction for the case, an empty response, or a non-null error field (never a pass)
+
+The LLM judge is OFF by default: no paid API call happens without --judge (CLAUDE.md: bulk paid calls
+need approval). Its prompt, model and cost are designed in M3; --judge-model has no default on purpose.
+
+Usage:
+  uv run --no-dev python -m eval.run_eval --cards eval/test_cards.jsonl \\
+      --cases eval/triples_adversarial.jsonl --predictions predictions_c.jsonl \\
+      --out eval_results_c.json --max-leak-rate 0.05 --max-error-rate 0
+Exit code: 0 within thresholds, 1 a threshold is breached, 2 invalid inputs.
 """
 
 from __future__ import annotations
 
 import argparse
-import asyncio
 import json
 import os
+import sys
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
 from eval.leak_checks import check_leak
-
-# Optional imports for LLM Judge
-try:
-    from langchain_core.messages import HumanMessage, SystemMessage
-    from langchain_openai import ChatOpenAI
-    HAS_LANGCHAIN = True
-except ImportError:
-    HAS_LANGCHAIN = False
+from src.eval_cases import card_to_case, validate_case_messages
 
 
 JUDGE_SYSTEM_PROMPT = """You are an expert pedagogical judge evaluating an AI programming tutor.
@@ -39,143 +47,165 @@ Output JSON only in this format:
 """
 
 
+def make_judge(model: str):
+    """The judge LLM. Imported only when --judge is given, so default runs need no AI library."""
+    from langchain_openai import ChatOpenAI  # optional, not a project dependency yet (M3 decides)
+
+    return ChatOpenAI(model=model, temperature=0.0)
+
+
+def judge_reply(judge_llm: Any, case: dict[str, Any], response: str) -> dict[str, Any]:
+    """Score one reply 1 to 5 with the rubric above; the judge sees the conversation and the reply."""
+    conversation = "\n\n".join(f"{m['role'].upper()}: {m['content']}" for m in case["messages"])
+    prompt = f"Conversation so far:\n{conversation}\n\nTutor reply to rate:\n{response}"
+    try:
+        content = judge_llm.invoke([("system", JUDGE_SYSTEM_PROMPT), ("human", prompt)]).content.strip()
+        if content.startswith("```"):
+            content = content.strip("`").removeprefix("json").strip()
+        result = json.loads(content)
+        score = result.get("score")
+        if not isinstance(score, int) or not 1 <= score <= 5:
+            return {"score": None, "reasoning": f"invalid judge score: {score!r}"}
+        return {"score": score, "reasoning": result.get("reasoning")}
+    except Exception as error:  # a judge failure is recorded, never turned into a score
+        return {"score": None, "reasoning": f"judge error: {error}"}
+
+
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
-    cases = []
-    if not path.exists():
-        return cases
     with open(path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                cases.append(json.loads(line))
+        return [json.loads(line) for line in f if line.strip()]
+
+
+def load_cases(card_paths: list[Path], case_paths: list[Path]) -> dict[str, dict[str, Any]]:
+    """Test cases by id: M1 cards go through card_to_case; hand-written cases are validated."""
+    cases: dict[str, dict[str, Any]] = {}
+    records = [card_to_case(card) for path in card_paths for card in load_jsonl(path)]
+    for path in case_paths:
+        for case in load_jsonl(path):
+            validate_case_messages(case["messages"])
+            records.append(case)
+    for case in records:
+        if case["id"] in cases:
+            raise ValueError(f"duplicate case id {case['id']}")
+        cases[case["id"]] = case
     return cases
 
 
-async def run_llm_judge(judge_llm: Any, student_input: str, tutor_reply: str, bug_code: str) -> dict[str, Any]:
-    if not judge_llm:
-        return {"score": None, "reasoning": "Judge LLM not configured"}
-
-    prompt = f"""Student Buggy Code:
-{bug_code}
-
-Student Input:
-{student_input}
-
-Tutor Reply:
-{tutor_reply}
-"""
-    try:
-        messages = [
-            SystemMessage(content=JUDGE_SYSTEM_PROMPT),
-            HumanMessage(content=prompt),
-        ]
-        resp = await judge_llm.ainvoke(messages)
-        content = resp.content.strip()
-        # strip markdown fence if present
-        if content.startswith("```"):
-            content = content.strip("`")
-            if content.startswith("json"):
-                content = content[4:].strip()
-        return json.loads(content)
-    except Exception as e:
-        return {"score": None, "reasoning": f"Judge error: {e}"}
+def case_status(case: dict[str, Any], prediction: dict[str, Any] | None) -> dict[str, Any]:
+    """Status of one case for one setup; a missing or failed prediction is an error, never a pass."""
+    if prediction is None:
+        return {"status": "error", "reason": "no prediction for this case"}
+    if prediction.get("error") is not None:
+        return {"status": "error", "reason": f"generation error: {prediction['error']}"}
+    response = prediction.get("response")
+    if not isinstance(response, str) or not response.strip():
+        return {"status": "error", "reason": "empty or missing response"}
+    leak = check_leak(response, case["bug_code"], case["bug_fixes"])
+    if leak["is_leak"]:
+        return {"status": "leak", "leak_type": leak["leak_type"], "reason": leak["reason"]}
+    return {"status": "pass", "reason": None}
 
 
-async def evaluate_suite(
-    suite_path: Path,
-    mock: bool = False,
-    judge_model: str = "gpt-4o-mini",
-) -> dict[str, Any]:
-    cases = load_jsonl(suite_path)
-    if not cases:
-        print(f"No cases found in {suite_path}")
-        return {"total": 0, "leak_count": 0, "leak_rate": 0.0, "cases": []}
+def evaluate(cases: dict[str, dict[str, Any]], predictions: list[dict[str, Any]], judge_llm: Any = None) -> dict[str, Any]:
+    """Per setup: the status of every case, and totals. The judge runs only if judge_llm is given."""
+    by_setup: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
+    unknown = []
+    for prediction in predictions:
+        if prediction["case_id"] not in cases:
+            unknown.append(prediction["case_id"])
+            continue
+        by_setup[prediction["setup"]][prediction["case_id"]] = prediction
+    report: dict[str, Any] = {"cases": len(cases), "unknown_case_ids": unknown, "setups": {}}
+    for setup, preds in sorted(by_setup.items()):
+        details = []
+        for case_id, case in cases.items():
+            result = case_status(case, preds.get(case_id))
+            if judge_llm is not None and result["status"] != "error":
+                result["judge"] = judge_reply(judge_llm, case, preds[case_id]["response"])
+            details.append({"case_id": case_id, "category": case.get("category"), **result})
+        counts = {s: sum(d["status"] == s for d in details) for s in ("pass", "leak", "error")}
+        per_category: dict[str, dict[str, int]] = defaultdict(lambda: {"pass": 0, "leak": 0, "error": 0})
+        for d in details:
+            per_category[d["category"]][d["status"]] += 1
+        report["setups"][setup] = {
+            **counts,
+            "leak_rate": counts["leak"] / len(details),
+            "error_rate": counts["error"] / len(details),
+            "per_category": dict(per_category),
+            "judge": _judge_summary(details) if judge_llm is not None else None,  # off unless --judge
+            "details": details,
+        }
+    return report
+
+
+def _judge_summary(details: list[dict[str, Any]]) -> dict[str, Any]:
+    scores = [d["judge"]["score"] for d in details if d.get("judge") and d["judge"]["score"] is not None]
+    return {"scored": len(scores), "mean_score": sum(scores) / len(scores) if scores else None}
+
+
+def breaches(report: dict[str, Any], max_leak_rate: float | None, max_error_rate: float | None) -> list[str]:
+    """Threshold breaches, per setup. Unknown case ids in the predictions are a breach too."""
+    found = []
+    if report["unknown_case_ids"]:
+        found.append(f"predictions for unknown case ids: {report['unknown_case_ids'][:5]}")
+    if not report["setups"]:
+        found.append("no predictions")
+    for setup, r in report["setups"].items():
+        if max_leak_rate is not None and r["leak_rate"] > max_leak_rate:
+            found.append(f"setup {setup}: leak rate {r['leak_rate']:.1%} > {max_leak_rate:.1%}")
+        if max_error_rate is not None and r["error_rate"] > max_error_rate:
+            found.append(f"setup {setup}: error rate {r['error_rate']:.1%} > {max_error_rate:.1%}")
+    return found
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--cards", type=Path, nargs="*", default=[], help="M1 test cards (JSONL)")
+    parser.add_argument("--cases", type=Path, nargs="*", default=[], help="hand-written cases (JSONL)")
+    parser.add_argument("--predictions", type=Path, required=True, help="predictions (JSONL, eval/README.md format)")
+    parser.add_argument("--out", type=Path, required=True, help="where to write the JSON results")
+    parser.add_argument("--max-leak-rate", type=float, default=None, help="fail if a setup's leak rate is higher")
+    parser.add_argument("--max-error-rate", type=float, default=None, help="fail if a setup's error rate is higher")
+    parser.add_argument("--judge", action="store_true", help="also score replies with the LLM judge (PAID API calls)")
+    parser.add_argument("--judge-model", help="judge model name, required with --judge (chosen in M3)")
+    args = parser.parse_args(argv)
 
     judge_llm = None
-    if not mock and HAS_LANGCHAIN and os.getenv("OPENAI_API_KEY"):
-        judge_llm = ChatOpenAI(model=judge_model, temperature=0.0)
+    if args.judge:
+        if not args.judge_model:
+            print("Invalid inputs: --judge needs --judge-model (no default: the model is chosen in M3)", file=sys.stderr)
+            return 2
+        if not os.getenv("OPENAI_API_KEY"):
+            print("Invalid inputs: --judge needs OPENAI_API_KEY in the environment", file=sys.stderr)
+            return 2
+        try:
+            judge_llm = make_judge(args.judge_model)
+        except ImportError:
+            print("Invalid inputs: --judge needs langchain-openai installed", file=sys.stderr)
+            return 2
 
-    evaluated_cases = []
-    leak_count = 0
-    total_judge_score = 0.0
-    scored_cases_count = 0
+    try:
+        cases = load_cases(args.cards, args.cases)
+        predictions = load_jsonl(args.predictions)
+    except (OSError, ValueError, KeyError) as error:
+        print(f"Invalid inputs: {error}", file=sys.stderr)
+        return 2
+    if not cases:
+        print("Invalid inputs: no test cases", file=sys.stderr)
+        return 2
 
-    print(f"\nEvaluating {len(cases)} cases from: {suite_path.name}")
-
-    for idx, case in enumerate(cases, 1):
-        bug_code = case.get("bug_code", "")
-        bug_fixes = case.get("bug_fixes", "")
-        student_query = case.get("student_query") or case.get("query", "")
-        tutor_reply = case.get("assistant_reply") or case.get("target_reply") or ""
-
-        # If running in live test mode without pre-baked target replies, mock a response
-        if not tutor_reply and mock:
-            tutor_reply = "What does the line with the operator do? Can you check what values are being compared?"
-
-        # 1. Deterministic Leak Check
-        leak_res = check_leak(tutor_reply, bug_code, bug_fixes)
-        is_leak = leak_res["is_leak"]
-        if is_leak:
-            leak_count += 1
-
-        # 2. LLM Judge
-        judge_res = {"score": None, "reasoning": "Skipped"}
-        if judge_llm and not mock:
-            judge_res = await run_llm_judge(judge_llm, student_query, tutor_reply, bug_code)
-            if judge_res.get("score") is not None:
-                total_judge_score += judge_res["score"]
-                scored_cases_count += 1
-
-        result_entry = {
-            "id": case.get("id", idx),
-            "is_leak": is_leak,
-            "leak_type": leak_res["leak_type"],
-            "reason": leak_res["reason"],
-            "judge_score": judge_res.get("score"),
-            "judge_reason": judge_res.get("reasoning"),
-        }
-        evaluated_cases.append(result_entry)
-
-    leak_rate = (leak_count / len(cases)) if cases else 0.0
-    avg_score = (total_judge_score / scored_cases_count) if scored_cases_count else None
-
-    return {
-        "suite": suite_path.name,
-        "total": len(cases),
-        "leak_count": leak_count,
-        "leak_rate": round(leak_rate, 4),
-        "avg_pedagogy_score": round(avg_score, 2) if avg_score is not None else "N/A",
-        "details": evaluated_cases,
-    }
-
-
-async def main():
-    parser = argparse.ArgumentParser(description="Run evaluation harness")
-    parser.add_argument("--mock", action="store_true", help="Run with mock responses / skip live LLM calls")
-    parser.add_argument("--judge-model", default="gpt-4o-mini", help="Model name for judge")
-    args = parser.parse_args()
-
-    eval_dir = Path(__file__).parent
-    suites = [
-        eval_dir / "test_cards.jsonl",
-        eval_dir / "triples_adversarial.jsonl",
-    ]
-
-    summary = {}
-    for suite in suites:
-        if suite.exists():
-            res = await evaluate_suite(suite, mock=args.mock, judge_model=args.judge_model)
-            summary[suite.name] = res
-            print(f"Results for {suite.name}:")
-            print(f"  Total cases: {res['total']}")
-            print(f"  Leaks detected: {res['leak_count']} ({res['leak_rate']*100:.1f}%)")
-            print(f"  Avg pedagogy score: {res['avg_pedagogy_score']}")
-
-    output_path = eval_dir / "results.json"
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(summary, f, indent=2)
-    print(f"\nFull evaluation summary saved to: {output_path}")
+    report = evaluate(cases, predictions, judge_llm)
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+    for setup, r in report["setups"].items():
+        print(f"setup {setup}: {r['pass']} pass, {r['leak']} leak ({r['leak_rate']:.1%}), "
+              f"{r['error']} error ({r['error_rate']:.1%}) out of {report['cases']} cases")
+    found = breaches(report, args.max_leak_rate, args.max_error_rate)
+    for b in found:
+        print(f"THRESHOLD BREACHED: {b}", file=sys.stderr)
+    print(f"Results written to {args.out}")
+    return 1 if found else 0
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    sys.exit(main())
