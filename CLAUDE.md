@@ -97,7 +97,8 @@ Dhia's other current courses: **Data Engineering** (pipelines, storage, BigQuery
 - Version pins for the Vertex pre-built serving image: **`peft==0.13.2`**, **`transformers==4.46.*`**
 - BitsAndBytes cannot be installed on macOS: quantized training only runs in the cloud component
 - Component base images: data step `python:3.11*` family; fine-tune and inference **`pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel`**; ragas evaluation **`cicirello/pyaction:3.11`** (ragas needs `git`)
-- GPU task config: `set_accelerator_type("NVIDIA_TESLA_T4")`, `set_cpu_limit("16")`, `set_memory_limit("50G")`
+- GPU task config: `set_accelerator_type("NVIDIA_TESLA_T4")`. Practice uses `set_cpu_limit("16")`, `set_memory_limit("50G")`; **we use 8 CPU / 30G (n1-standard-8 + T4) since 2026-11-12**: the 16/50G request waited for "insufficient resources" in europe-west2 and Dhia cancelled it; 30 GB RAM covers the 7.64 GB of Phi-3 weight files. Values in `GPU_TASK_CPU_LIMIT` / `GPU_TASK_MEMORY_LIMIT`
+- Pipeline runs are named `benjosh-socratic-tutor-<mode>` with labels `team=benjosh`, `project=socratic-tutor`, `run-mode=<mode>` (shared class project: spot our runs, filter billing). T4 capacity in europe-west2 can run out: a run may wait or fail with "Resources are insufficient"
 - TensorBoard: `report_to=["tensorboard"]`, `logging_dir` = the component's `metrics.path`
 - Serving image: `us-docker.pkg.dev/deeplearning-platform-release/gcr.io/huggingface-pytorch-inference-cu121.2-3.transformers.4-46.ubuntu2204.py311`, `serving_container_ports=[8080]`, custom `handler.py` with `EndpointHandler` at the root of the model artifacts folder
 - Endpoint: `n1-standard-8` + T4, min = max = 1 node. Takes 15-30 min to deploy. **No scale to zero: delete the endpoint after every test session.**
@@ -132,6 +133,9 @@ Dhia's other current courses: **Data Engineering** (pipelines, storage, BigQuery
 - **M0 Setup**: bring the Session 2 solution into this repo, `uv sync`, `.env`, run `validate_gcp_setup.py`, add collaborators, README skeleton
 - **M1 Data**: download and explore the dataset, design the sample format and split, adapt the data transformation component, run it on Vertex
 - **M2 Fine-tune**: LoRA component, hyper-parameters in one dict and logged, TensorBoard train/validation loss
+  - Decisions (2026-11-12): completion-only loss (only the final tutor reply graded); course library pins for training too (transformers 4.46.3, peft 0.13.2, trl 0.12.2, bitsandbytes 0.47.0); **fp16, never bf16 (T4 has no native bf16)**; adapter + tokenizer + `training_info.json` saved, merge decided in M5; smoke run before every full run
+  - `max_seq_length` 2304, above the longest card (2066). **Never truncate the start or the end of a card**: longer cards are compressed in the middle (system + problem + code + recent turns kept). This is our **context compression example for LO7**. TRL 0.12.2 defaults to 1024 if unset: always set it
+  - Smoke-run cost = measured duration x official hourly price for europe-west2 (read from the pricing page with the region set to London; never estimated)
 - **M3 Predict + evaluate**: inference for **base and fine-tuned** models; metrics: deterministic leak checks, a reference-based metric (ROUGE/BLEU via ragas or embedding similarity), LLM-as-a-judge "Socratic quality"
   - Evaluate **three setups on the same test cards**: (a) base Phi-3 without system prompt, (b) base Phi-3 + prompt v1.0.0, (c) fine-tuned Phi-3 + prompt v1.0.0. Goal: show what prompting alone achieves vs what LoRA adds. The inference component needs a **"no prompt" switch** for (a)
   - Leak definition: a leak = rewriting the student's own line or giving the corrected function. Demonstrating a concept on a toy example is allowed (e.g. `10_39_xnglxsh`: `sen = sen.replace("o", "X")` to try in the terminal). **Calibrate the metric on the human tutor replies first: they should score close to zero leaks**
@@ -143,11 +147,13 @@ Dhia's other current courses: **Data Engineering** (pipelines, storage, BigQuery
   - The test split has 80 cards, fewer than 100: hand-written triples fill the gap
 - **M5 Serve**: registration script with handler, endpoint, Chainlit tutor app
   - **Rules: [docs/m5-serving-rules.md](docs/m5-serving-rules.md)**, single source in `src/serving_contract.py` (server-side prompt, one decoding definition, fp16, pinned revision, deploy early and delete after use). Owner: Saumya
+  - **Deploy the endpoint well before the demo** and check it answers: it needs a T4 in europe-west2, which can run out (M2 first smoke attempt waited about an hour), and deployment takes 15 to 30 min when a GPU is free. Keep a fallback (recorded demo or the M6 OpenAI route)
   - The handler adds the system prompt server-side (prompt file copied next to `handler.py`) and returns the prompt version. **Chainlit sends the conversation WITHOUT the system prompt** (no double prompt)
 - **M6 Optimise**: router (easy -> fine-tuned Phi-3, hard -> OpenAI model, off-topic -> guardrail), semantic cache, measure latency/cost/quality with each on and off
 - **M7 Monitor**: Langfuse traces with model name and version, P50/P95/P99, cost per call, error rate, quality score, dashboard, alert policy
   - Log the **prompt version** in the Langfuse trace metadata
 - **M8 Write and present**: readiness checklist, AI product brief, slides, demo rehearsal, endpoint cleanup
+  - Cost model: use the real costs recorded from Billing -> Reports (labels `team=benjosh`, `run-mode`), the actual hourly rate and whether provisioning is billed, in `docs/results/` (to record after the M2 full run)
 
 ## 9. Learning log template (`docs/learning-log.md`)
 

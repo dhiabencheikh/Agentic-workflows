@@ -137,3 +137,91 @@ Recorded for later milestones (CLAUDE.md section 8): M3 three setups (base witho
 
 **Exam-style question:** Why compare the Vertex output with a local run instead of trusting the green tick in the console?
 **Answer:** A green tick only says the code ran without error. Comparing outputs proves the cloud run used the same data, parameters and code as the version we tested; here the files were identical, so the 20 unit tests and the notebook figures also describe what M2 will train on.
+
+## 2026-11-12 · M2 · Fine-tuning: preparation and smoke runs
+
+**In plain words:** before paying for a full GPU training run, we checked everything that can be checked for free on the laptop, then ran a short paid "smoke" run on the hardest cards to prove the training fits on a T4 and to measure how long each part takes.
+
+**Class link:** Session 3 slides 4 (validation, over-fitting), 6 (quantization), 7-11 (LoRA), 12 (hyper-parameters). Practice 3 section 1. Concepts 16 to 20 in [concepts.md](concepts.md).
+
+**Other course link:** Neural Networks (backpropagation, learning rate, batch size, epochs, training and validation curves).
+
+**What we built:**
+- Pinned training libraries: transformers 4.46.3, peft 0.13.2 (serving image), trl 0.12.2 (the release declaring `transformers<4.47`), bitsandbytes 0.47.0
+- Checks on the M1 data ([results/m2_finetuning_prep.md](results/m2_finetuning_prep.md)): no card over 2304 tokens; the completion-only collator grades exactly the final tutor reply plus `<|end|>` on 665 of 665 cards (median 2.5% of tokens); LoRA r=8 trains 12,582,912 parameters (0.33%)
+- QLoRA component (4-bit NF4, fp16, completion-only loss, middle compression, best checkpoint by validation loss, per-phase timings), 7 CPU tests on a tiny Phi-3
+- Pipeline modes `smoke` (20 updates, 40 longest cards) and `full`; report script `scripts/pipeline_job_report.py`
+
+**Result (smoke run `benjosh-socratic-tutor-20261112173302`, [results/m2_smoke_run.md](results/m2_smoke_run.md)):**
+
+| Phase (times UTC) | Duration |
+|---|---|
+| Provisioning, machine + GPU (16:34:07 to 16:35:37) | 90 s |
+| Container, image, pip install | 44 s |
+| Tokenizer, data, model download, quantization, LoRA | 49 s |
+| Training, 20 updates + 2 validations | 1,385 s |
+| Final evaluation + save | 83 s |
+| Whole step | 1,688 s (28.1 min) |
+
+61.4 s per update (validation excluded), 77.6 s per validation of 99 cards, peak GPU memory 11.18 GB of 16 GB, 0 NaN. Validation loss 1.60 at update 10, 1.80 at update 20 (8 passes over 40 cards: over-fitting, as expected; the update-10 checkpoint was kept). The regenerated data was byte-identical to M1.
+
+**Problems hit and fixes:**
+- **First smoke attempt waited about an hour for a GPU.** Pipeline `model-training-pipeline-20261112163043`: the fine-tuning step started at 15:30:46 UTC on `n1-standard-16` + T4, the console showed "Resources are insufficient in region: europe-west2", and the job never trained; Dhia cancelled it at 16:31:19 UTC. Two other teams' T4 jobs were waiting at the same time: the region had no free T4. Fix: smaller machine `n1-standard-8` + T4 (8 CPU / 30 GB; the Phi-3 weight files total 7.64 GB), and the second attempt got its GPU 90 s after the job was created. A smaller machine does not create GPUs; the wait depends on demand in the region.
+- **Lesson for M5 (serving and the demo):** an endpoint also needs a T4 in europe-west2 and takes 15 to 30 minutes to deploy when one is free. Deploy it well before the demo, check that it answers, and keep a fallback (for example a recorded demo or the OpenAI route of M6), since the endpoint is billed per hour while it is up.
+- TRL 0.12.2 defaults `max_seq_length` to 1024 when unset and cuts the end of longer cards, which would remove the reply on 55 train cards: always set explicitly (2304).
+- Renaming the pipeline reset Vertex's cache, so the data step ran again (62 s); its output was byte-identical.
+- Report script fixes: Cloud Logging can return empty pages with a "next page" token; Vertex service lines carry `task_name=service`; the pipeline did not record its GPU job, found instead through the run's billing label; one validation line was missing from the logs, so the validation count now comes from `training_info.json`.
+- Timestamps: the console shows Paris time (UTC+1), the reports UTC; now always labelled.
+
+**Exam-style question:** Why run 20 updates on the 40 longest cards before the full run, rather than on 40 random cards?
+**Answer:** GPU memory and time per update grow with sequence length. If the longest cards fit (11.18 GB of 16 GB here), every card fits; and the measured 61.4 s per update is an upper bound, so the full-run cost computed from it is conservative.
+
+## 2026-11-12 · M2 · Full fine-tuning run
+
+**In plain words:** the full QLoRA training ran on a T4: 3 passes over 566 cards. The model got much better at predicting the human tutors' replies on problems it never saw, then started memorising after about a pass and a half; the best moment was kept.
+
+**Class link:** Session 3 slide 4 (validation curve, over-fitting), slides 6-12 (QLoRA, hyper-parameters). Practice 3 section 1 "Checking the results". Concepts 16 to 19.
+
+**What we ran:** `uv run python -m scripts.pipeline_runner --mode full` (launched by Dhia). Job `benjosh-socratic-tutor-20261112182647`, `n1-standard-8` + T4, data step reused from cache. Report: [results/m2_full_run.md](results/m2_full_run.md).
+
+**Result:**
+
+| Validation loss (99 cards, problems 1, 9, 18, 20) | Value |
+|---|---|
+| Base model, before training (update 0, `eval_on_start`) | 1.9894 |
+| Best, update 50 (about 1.4 passes over the data) | **1.4197** (28.6% lower than the base model) |
+| Update 90, highest after the best | 1.5623 |
+| Final evaluation after reloading the best checkpoint | 1.4336 |
+
+- Saved adapter: `checkpoint-50` (lowest validation loss), 50,365,768 bytes, with tokenizer and `training_info.json`.
+- 105 updates; 29.4 s per update (validation excluded) and 82.1 s per validation; peak GPU memory 11.18 GB; 0 NaN.
+- Whole step 4,644 s (77.4 min), of which provisioning (waiting for a T4) 435 s. Excluding provisioning and waiting, 4,208 s: 56% of the 7,513 s upper bound projected from the smoke run (the smoke run measured 61.4 s per update on the 40 longest cards; `group_by_length` and shorter average cards brought it to 29.4 s).
+- Cost: to record from Billing -> Reports (labels `team=benjosh`, `run-mode=full`).
+
+**Problems hit and open points:**
+- Over-fitting after update 50: validation loss rose from 1.4197 to 1.5623 while training continued. `load_best_model_at_end` kept update 50, as designed. Lesson: 2 passes instead of 3 would have given the same adapter for about a third less training time.
+- Open: the final evaluation of the reloaded best checkpoint (1.4336) differs by 1% from its loss during training (1.4197), on the same cards. Cause not verified (possibly numerical, reloading an adapter on a 4-bit base in fp16). It does not change which adapter is used; M3 measures its behaviour directly.
+- Naming bug in our component: the field `best_eval_loss` holds the final evaluation, not the best one. To fix (record both).
+- A lower validation loss does not prove Socratic behaviour (concept 16): M3 measures leaks and quality on generated replies.
+
+**Exam-style question:** The validation loss is lowest at update 50 of 105. What does that tell you, and what did the pipeline do about it?
+**Answer:** After about 1.4 passes the model starts fitting the training cards' specifics rather than the tutoring behaviour, so its predictions on unseen problems get worse (over-fitting). The trainer evaluated every 10 updates and `load_best_model_at_end` restored the update-50 checkpoint, so the saved adapter is the best one measured.
+
+## 2026-11-12 · M2 · Implicit default LR schedule, spotted by the teacher
+
+**In plain words:** we never chose how the learning rate changes during training, so the library chose for us: full speed from the first update, then a straight decline to zero. It worked, but it was an accident, not a decision.
+
+**Class link:** Session 3 slide 12 (learning rate: "how much to change the model in response to the estimated error each time the model weights are updated").
+
+**What we found (logs of the full run, transformers 4.46 code):**
+- `lr_scheduler_type` was not set, so it defaulted to `linear`; `warmup_steps` and `warmup_ratio` defaulted to 0.
+- The learning rate was 3e-4 from update 1 (2.86e-4 logged at update 5) and fell linearly to 0 at update 105 (`train/learning_rate`).
+- Validation loss fell steeply early (1.99 at update 0 to 1.53 at update 10), then slowly.
+- The gradient norm never reached 0 (0.47 to 1.68): there was still an error signal to learn from; the updates shrank only because the learning rate went to 0.
+
+**What we changed:** `lr_scheduler_type` and `warmup_ratio` are now explicit in `FINE_TUNING_HYPERPARAMETERS`, set to the values the run used ("linear", 0.0), and passed to the trainer: no hidden defaults. The M2 figure has learning-rate and gradient-norm panels (`docs/figures/m2_loss_curves.png`). No new run.
+
+**Next run (not done, no time before the presentation):** a warm-up (for example 10% of the updates), a deliberate schedule, and 2 epochs, since validation loss was lowest at update 50 of 105.
+
+**Exam-style question:** Why use a warm-up when fine-tuning with LoRA and Adam?
+**Answer:** At the start, the LoRA matrices are new (B = 0) and Adam has no gradient statistics yet, so the first full-size steps are taken on very little information. Ramping the learning rate up over the first updates lets those statistics settle before large steps, which makes the start of training smoother and less sensitive to the first few batches.
