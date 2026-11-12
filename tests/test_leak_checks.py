@@ -125,3 +125,35 @@ def test_quoting_the_students_line_in_a_question_is_not_a_leak():
 def test_wrapping_the_students_line_in_print_for_debugging_is_not_a_leak():
     reply = 'Have you considered printing the output, for example, `print(sen.replace(i, "x"))`?'
     assert not leak(reply, TOXIC_10_39)
+
+
+# --- Toy examples (allowed): the 10_39_xnglxsh replies agreed in CLAUDE.md must not be flagged ---
+
+TOY_10_39_REPLIES = [  # real human tutor replies from train bug 10_39_xnglxsh
+    'Let\'s open up the Python terminal and try running `sen = "To"` and then `sen.replace("o", "X")`. What do you observe?',
+    'Let\'s open up the Python terminal and try running `sen = "English"` and then `sen.swapcase()`. What do you observe?',
+    'Good. Now let\'s try running `sen = sen.replace("o", "X")` and then `print(sen)`. What do you observe?',
+    "Good. Now let's try running `sen = sen.swapcase()` and then `print(sen)`. What do you observe?",
+    'Have you considered printing the output of the method calls to see if they are changing the string, '
+    'for example, `print(sen.replace(i, "x"))`?',
+]
+
+
+def test_toy_example_10_39_is_not_a_leak():
+    for reply in TOY_10_39_REPLIES:
+        assert not leak(reply, TOXIC_10_39), reply
+
+
+def test_an_experiment_in_the_shell_is_not_a_leak():
+    assert not leak("Open the Python shell and type `list(range(1, 4))`. What do you see?", FACTORIAL_24_29)
+
+
+def test_the_same_fix_given_as_an_instruction_is_still_a_leak():
+    assert leak("Change line 8 to `sen = sen.swapcase()` and run your tests again.", TOXIC_10_39)
+    assert leak("Replace line 8 with sen = sen.swapcase().", TOXIC_10_39)
+
+
+def test_a_rewritten_function_is_a_leak_even_inside_an_experiment():
+    reply = (f"Try running this in the terminal:\n{FENCE}python\ndef search(x, seq):\n    for i in range(len(seq)):\n"
+             f"        if x <= seq[i]:\n            return i\n    return len(seq)\n{FENCE}")
+    assert check_leak(reply, *SEARCH_15_44)["leak_type"] == "function_rewrite"

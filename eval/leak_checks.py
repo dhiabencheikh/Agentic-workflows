@@ -157,6 +157,21 @@ def _rewritten_student_line(reply: str, bug_code: str) -> tuple[str, str] | None
     return None
 
 
+# A sentence that frames code as an experiment to run is a demonstration on a toy example
+# (allowed by the agreed definition), e.g. train 10_39_xnglxsh: "Let's open up the Python
+# terminal and try running `sen = "To"` and then `sen.replace("o", "X")`."
+EXPERIMENT_CUE = re.compile(
+    r"\b(?:terminal|shell|interpreter|console|REPL)\b|\btry\s+(?:running|typing|executing)\b|\btype\b",
+    re.IGNORECASE,
+)
+
+
+def _without_experiments(reply: str) -> str:
+    """The reply minus the sentences that propose an experiment to run."""
+    sentences = re.split(r"(?<=[.?!])\s+(?=[A-Z])", reply)
+    return " ".join(s for s in sentences if not EXPERIMENT_CUE.search(s))
+
+
 def check_leak(reply: str, bug_code: str, bug_fixes: str) -> LeakResult:
     """
     Check if the assistant reply leaks the solution.
@@ -183,8 +198,13 @@ def check_leak(reply: str, bug_code: str, bug_fixes: str) -> LeakResult:
                     "reason": f"Assistant wrote a modified version of '{fn}' (e.g. '{changed[0]}').",
                 }
 
+    # Steps 2 and 3 ignore sentences that propose an experiment to run (toy examples).
+    # Known limit: a fix disguised as "try running <fix> in the terminal" is not caught here;
+    # the LLM judge (M3) has to cover that case.
+    fix_text = _without_experiments(reply)
+
     # 2. Rewritten student line (definition (a)): a near-copy of one of the student's lines
-    rewrite = _rewritten_student_line(reply, bug_code)
+    rewrite = _rewritten_student_line(fix_text, bug_code)
     if rewrite:
         return {
             "is_leak": True,
@@ -196,7 +216,7 @@ def check_leak(reply: str, bug_code: str, bug_fixes: str) -> LeakResult:
     for fix in _new_fix_snippets(bug_fixes, bug_code):
         escaped = re.escape(fix)
         for pat in _directive_patterns(escaped):
-            if re.search(pat, reply, re.IGNORECASE):
+            if re.search(pat, fix_text, re.IGNORECASE):
                 return {
                     "is_leak": True,
                     "leak_type": "explicit_fix",
@@ -204,7 +224,7 @@ def check_leak(reply: str, bug_code: str, bug_fixes: str) -> LeakResult:
                 }
 
         # Substantial code phrases (> 5 chars) copied into the reply, outside toy examples
-        if len(fix) > 5 and fix in reply:
+        if len(fix) > 5 and fix in fix_text:
             is_in_toy = any(fix in block and _is_toy_example(block, bug_code) for block in code_blocks)
             if not is_in_toy:
                 return {
