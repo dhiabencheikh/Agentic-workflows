@@ -175,3 +175,34 @@ Recorded for later milestones (CLAUDE.md section 8): M3 three setups (base witho
 
 **Exam-style question:** Why run 20 updates on the 40 longest cards before the full run, rather than on 40 random cards?
 **Answer:** GPU memory and time per update grow with sequence length. If the longest cards fit (11.18 GB of 16 GB here), every card fits; and the measured 61.4 s per update is an upper bound, so the full-run cost computed from it is conservative.
+
+## 2026-11-12 · M2 · Full fine-tuning run
+
+**In plain words:** the full QLoRA training ran on a T4: 3 passes over 566 cards. The model got much better at predicting the human tutors' replies on problems it never saw, then started memorising after about a pass and a half; the best moment was kept.
+
+**Class link:** Session 3 slide 4 (validation curve, over-fitting), slides 6-12 (QLoRA, hyper-parameters). Practice 3 section 1 "Checking the results". Concepts 16 to 19.
+
+**What we ran:** `uv run python -m scripts.pipeline_runner --mode full` (launched by Dhia). Job `benjosh-socratic-tutor-20261112182647`, `n1-standard-8` + T4, data step reused from cache. Report: [results/m2_full_run.md](results/m2_full_run.md).
+
+**Result:**
+
+| Validation loss (99 cards, problems 1, 9, 18, 20) | Value |
+|---|---|
+| Base model, before training (update 0, `eval_on_start`) | 1.9894 |
+| Best, update 50 (about 1.4 passes over the data) | **1.4197** (28.6% lower than the base model) |
+| Update 90, highest after the best | 1.5623 |
+| Final evaluation after reloading the best checkpoint | 1.4336 |
+
+- Saved adapter: `checkpoint-50` (lowest validation loss), 50,365,768 bytes, with tokenizer and `training_info.json`.
+- 105 updates; 29.4 s per update (validation excluded) and 82.1 s per validation; peak GPU memory 11.18 GB; 0 NaN.
+- Whole step 4,644 s (77.4 min), of which provisioning (waiting for a T4) 435 s. Excluding provisioning and waiting, 4,208 s: 56% of the 7,513 s upper bound projected from the smoke run (the smoke run measured 61.4 s per update on the 40 longest cards; `group_by_length` and shorter average cards brought it to 29.4 s).
+- Cost: to record from Billing -> Reports (labels `team=benjosh`, `run-mode=full`).
+
+**Problems hit and open points:**
+- Over-fitting after update 50: validation loss rose from 1.4197 to 1.5623 while training continued. `load_best_model_at_end` kept update 50, as designed. Lesson: 2 passes instead of 3 would have given the same adapter for about a third less training time.
+- Open: the final evaluation of the reloaded best checkpoint (1.4336) differs by 1% from its loss during training (1.4197), on the same cards. Cause not verified (possibly numerical, reloading an adapter on a 4-bit base in fp16). It does not change which adapter is used; M3 measures its behaviour directly.
+- Naming bug in our component: the field `best_eval_loss` holds the final evaluation, not the best one. To fix (record both).
+- A lower validation loss does not prove Socratic behaviour (concept 16): M3 measures leaks and quality on generated replies.
+
+**Exam-style question:** The validation loss is lowest at update 50 of 105. What does that tell you, and what did the pipeline do about it?
+**Answer:** After about 1.4 passes the model starts fitting the training cards' specifics rather than the tutoring behaviour, so its predictions on unseen problems get worse (over-fitting). The trainer evaluated every 10 updates and `load_best_model_at_end` restored the update-50 checkpoint, so the saved adapter is the best one measured.

@@ -224,3 +224,6 @@ model_training_pipeline.json
 
 # Compiled Kubeflow pipeline (renamed)
 benjosh-socratic-tutor.json
+
+# TensorBoard logs downloaded from runs
+logs/
