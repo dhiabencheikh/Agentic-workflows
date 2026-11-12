@@ -117,3 +117,23 @@ Recorded for later milestones (CLAUDE.md section 8): M3 three setups (base witho
 
 **Exam-style question:** The training data contains no student asking "just give me the fixed code". Where does the tutor's refusal come from, and how do we know it works?
 **Answer:** Only from the system prompt, since fine-tuning never showed that situation. We cannot assume it works: M4 adds adversarial triples (asking for the answer, prompt injection, off-topic) and the CI gate fails if the tutor leaks a fix on them.
+
+## 2026-11-12 · M1 · Data step on Vertex AI
+
+**In plain words:** the data step ran in the cloud, as the first workstation of the assembly line, and produced exactly the same flashcards as on the laptop.
+
+**Class link:** Session 2 slides 13-14 (job submission, Vertex console, artifacts in the pipeline root). Practice 2 section 3. Concept 12 in [concepts.md](concepts.md).
+
+**What we ran:** `uv run python -m scripts.pipeline_runner` (launched by Dhia). Job `model-training-pipeline-20261112142518`, parameters: prompt v1.0.0, 4 validation problems, seed 42.
+
+**Result:**
+- State `SUCCEEDED`; the data component ran in 184 s (13:25:23 to 13:28:29 UTC)
+- Outputs under `gs://benjosh-llmops/vertexai-pipeline-root/123905721265/model-training-pipeline-20261112142518/data-transformation-component_5095698870994731008/`: `train_dataset`, `validation_dataset`, `test_dataset`
+- Downloaded and compared with a local run of the same code: train 566, validation 99, test 80 cards; validation problems 1, 9, 18, 20; test problems 6, 7, 15, 24; `prompt_version` 1.0.0 on every card; **identical to the local output, card for card**
+
+**Problem hit and fix:**
+- The GCP project `agentics-workflows-510809` is shared by the class (20 buckets, other teams' pipelines). Our bucket uses default project permissions: any project editor can read, overwrite or delete our files. Consequences: no secrets in the bucket, verify artifacts rather than trust them, and the T4 quota in europe-west2 is shared, so M2 jobs may queue
+- The monitoring script crashed after the job ended (it read a field that does not exist on a successful job); the job itself was unaffected
+
+**Exam-style question:** Why compare the Vertex output with a local run instead of trusting the green tick in the console?
+**Answer:** A green tick only says the code ran without error. Comparing outputs proves the cloud run used the same data, parameters and code as the version we tested; here the files were identical, so the 20 unit tests and the notebook figures also describe what M2 will train on.
