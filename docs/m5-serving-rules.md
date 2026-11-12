@@ -52,6 +52,39 @@ The model is registered once: `projects/123905721265/locations/europe-west2/mode
 | Demo app | `uv run --no-dev chainlit run src/app/main.py` |
 | **Delete after use** (stops the hourly billing) | `uv run --no-dev python -m scripts.delete_endpoint --endpoint <GCP_ENDPOINT_ID>` |
 
+## Morning redeploy (presentation day)
+
+Deploy as early as possible: a T4 can be unavailable for a while (`503 Machine type temporarily unavailable`,
+seen on 2026-11-12 at 21:34 UTC in europe-west2). The deploy script retries on that error only.
+Delete the endpoint right after the demo.
+
+**Plan A: europe-west2** (model already registered there, no re-registration)
+
+```bash
+uv run --no-dev python -m scripts.deploy_endpoint --region europe-west2 \
+  --model projects/123905721265/locations/europe-west2/models/5118624650506534912 --retries 4 --retry-wait 180
+# then in .env: GCP_REGION=europe-west2 and GCP_ENDPOINT_ID=<printed id>
+```
+
+**Plan B: europe-west4** (T4 serving quota 8; the model registry is regional, so register there once)
+
+```bash
+uv run --no-dev python -m scripts.register_model_with_custom_handler --region europe-west4 \
+  --model-uri gs://benjosh-llmops/vertexai-pipeline-root/123905721265/benjosh-socratic-tutor-20261112182647/fine-tuning-component_-4632991117799849984/model
+uv run --no-dev python -m scripts.deploy_endpoint --region europe-west4 \
+  --model <model resource name printed by the registration> --retries 4 --retry-wait 180
+# then in .env: GCP_REGION=europe-west4 and GCP_ENDPOINT_ID=<printed id>
+```
+
+Both plans use n1-standard-8 + 1 T4, fp16, the same adapter and decoding as the M3 evaluation.
+If no endpoint is up in time: demo in replay mode (`DEMO_MODE=replay`, recorded M3 replies, see the app).
+
+**After the demo, always:**
+
+```bash
+uv run --no-dev python -m scripts.delete_endpoint --region <GCP_REGION> --endpoint <GCP_ENDPOINT_ID>
+```
+
 ## Access needed (check with Dhia)
 
 `roles/aiplatform.user` (register model, create, deploy, undeploy, delete endpoint, predict),
