@@ -1,0 +1,24 @@
+<problem>
+Problem 3.
+</problem>
+<bug_code>
+1. x = 3
+</bug_code>
+<bug_desc>
+d
+</bug_desc>
+<bug_fixes>
+f
+</bug_fixes>
+<unit_tests>
+assert True
+</unit_tests>
+<stu_desc>
+s
+</stu_desc>
+<dialogue>
+User: It does not work.
+Assistant: What do you see on line 1?
+User: My variable `Total` is wrong.
+Assistant: Why do you think that is?
+</dialogue>

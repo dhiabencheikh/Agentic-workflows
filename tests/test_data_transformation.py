@@ -132,3 +132,28 @@ def test_code_block_after_a_tutor_line_goes_to_the_next_student_turn(tmp_path):
     assert student_turn.startswith("I need to add a -1 step!")
     assert "range(len(array)-1, -1, -1)" in student_turn
     assert last["messages"][-3]["content"] == "What would you need to do in the code to fix that?"
+
+
+@pytest.mark.parametrize(
+    ("problem_id", "should_merge"),
+    [("1", True), ("2", False), ("3", False), ("4", False)],
+    ids=["backticks-and-comma-merge", "operator-kept", "case-kept", "decimal-point-kept"],
+)
+def test_near_copies_merge_only_on_formatting_differences(tmp_path, problem_id, should_merge):
+    """Each fixture problem has a dialogue and a thread whose student lines differ
+    in one way. Their first tutor card is an exact copy; the second card is
+    merged only if the difference is formatting (backticks, spacing, end-of-word
+    punctuation), never case, operators or a decimal point."""
+    outputs = {split: tmp_path / f"{split}.jsonl" for split in ("train", "validation", "test")}
+    data_transformation_component.python_func(
+        raw_dataset_uri=str(Path(__file__).parent / "fixtures" / "near_copies"),
+        system_prompt=SYSTEM_PROMPT,
+        num_validation_problems=0,
+        seed=0,
+        train_dataset=str(outputs["train"]),
+        validation_dataset=str(outputs["validation"]),
+        test_dataset=str(outputs["test"]),
+    )
+    train = [json.loads(line) for line in outputs["train"].read_text().splitlines()]
+    cards = [e for e in train if e["problem_id"] == problem_id]
+    assert len(cards) == (2 if should_merge else 3)

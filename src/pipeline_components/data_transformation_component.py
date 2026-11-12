@@ -175,15 +175,33 @@ def data_transformation_component(
             history = history + [{"role": turn["role"], "content": content}]
         return examples
 
-    def deduplicate(examples: list) -> list:
-        """Drop examples whose messages are identical to an earlier one.
+    def comparison_key(messages: list) -> str:
+        """Key used only to detect copies; the kept example keeps its original text.
 
-        Thread files repeat the opening of the main dialogue word for word.
-        The alternative replies of the duplicates are merged into the kept one.
+        Ignored: spacing, backticks, and , . ! ? ; : at the end of a word
+        (so "`a` is set to `0`" and "a is set to 0," compare equal).
+        Kept: letter case, operators and punctuation inside a word, because
+        code is case-sensitive and `n - 1`, `n + 1`, `1.5`, `15` differ.
+        """
+
+        def normalise(text: str) -> str:
+            text = text.replace("`", "")
+            text = re.sub(r"[,.!?;:]+(?=\s|$)", "", text)
+            return " ".join(text.split())
+
+        return json.dumps([(m["role"], normalise(m["content"])) for m in messages])
+
+    def deduplicate(examples: list) -> list:
+        """Drop examples whose messages are copies of an earlier one.
+
+        Thread files repeat the opening of the main dialogue, sometimes with
+        formatting differences only. All messages (system, history, target)
+        are compared with comparison_key. The alternative replies of the
+        copies are merged into the kept example.
         """
         kept = {}
         for example in examples:
-            key = json.dumps(example["messages"], sort_keys=True)
+            key = comparison_key(example["messages"])
             if key not in kept:
                 kept[key] = example
             else:
