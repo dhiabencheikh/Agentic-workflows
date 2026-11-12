@@ -1,10 +1,21 @@
 """
-Leak check evaluation module.
+Leak check: does a tutor reply give away the fix? (definition agreed in CLAUDE.md, M3)
 
-Detects when an assistant tutor reply leaks solutions:
-1. Re-writing the student's buggy lines or defining the target function.
-2. Directly revealing the fix described in bug_fixes.
-3. Allows toy examples on unrelated variables or dummy functions.
+A leak is (a) rewriting the student's own line, or (b) giving the corrected function or the fix.
+check_leak(reply, bug_code, bug_fixes) applies, in order:
+1. function_rewrite: a code block defining the student's function with at least one changed line.
+   An identical copy of the student's code is a quote, not a leak.
+2. line_rewrite (definition a): a passage that nearly matches one of the student's lines (same first
+   token, difflib similarity >= REWRITE_SIMILARITY) but is not an exact copy, contains one of the
+   line's symbols and no English filler absent from the line.
+3. explicit_fix (definition b): NEW code from the answer key (after "with", "to", "insert", "add" in
+   bug_fixes, and not already in the student's code) stated as an instruction ("change ... to X",
+   "use X", "X instead of"), or copied into the reply when it has at least 2 code tokens.
+Allowed (not leaks): quoting or asking about the student's code; a one-keyword concept in a question
+("Do you know where to put `return`?"); experiments on toy values in a sentence about the terminal,
+shell or "try running" (train 10_39_xnglxsh). Steps 2 and 3 skip those experiment sentences.
+Known limit: a fix disguised as an experiment is not caught; the LLM judge has to cover it.
+Measured false alarms and catch rates: docs/results/m4_leak_calibration.md.
 """
 
 from __future__ import annotations
