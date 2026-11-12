@@ -206,3 +206,22 @@ Recorded for later milestones (CLAUDE.md section 8): M3 three setups (base witho
 
 **Exam-style question:** The validation loss is lowest at update 50 of 105. What does that tell you, and what did the pipeline do about it?
 **Answer:** After about 1.4 passes the model starts fitting the training cards' specifics rather than the tutoring behaviour, so its predictions on unseen problems get worse (over-fitting). The trainer evaluated every 10 updates and `load_best_model_at_end` restored the update-50 checkpoint, so the saved adapter is the best one measured.
+
+## 2026-11-12 · M2 · Implicit default LR schedule, spotted by the teacher
+
+**In plain words:** we never chose how the learning rate changes during training, so the library chose for us: full speed from the first update, then a straight decline to zero. It worked, but it was an accident, not a decision.
+
+**Class link:** Session 3 slide 12 (learning rate: "how much to change the model in response to the estimated error each time the model weights are updated").
+
+**What we found (logs of the full run, transformers 4.46 code):**
+- `lr_scheduler_type` was not set, so it defaulted to `linear`; `warmup_steps` and `warmup_ratio` defaulted to 0.
+- The learning rate was 3e-4 from update 1 (2.86e-4 logged at update 5) and fell linearly to 0 at update 105 (`train/learning_rate`).
+- Validation loss fell steeply early (1.99 at update 0 to 1.53 at update 10), then slowly.
+- The gradient norm never reached 0 (0.47 to 1.68): there was still an error signal to learn from; the updates shrank only because the learning rate went to 0.
+
+**What we changed:** `lr_scheduler_type` and `warmup_ratio` are now explicit in `FINE_TUNING_HYPERPARAMETERS`, set to the values the run used ("linear", 0.0), and passed to the trainer: no hidden defaults. The M2 figure has learning-rate and gradient-norm panels (`docs/figures/m2_loss_curves.png`). No new run.
+
+**Next run (not done, no time before the presentation):** a warm-up (for example 10% of the updates), a deliberate schedule, and 2 epochs, since validation loss was lowest at update 50 of 105.
+
+**Exam-style question:** Why use a warm-up when fine-tuning with LoRA and Adam?
+**Answer:** At the start, the LoRA matrices are new (B = 0) and Adam has no gradient statistics yet, so the first full-size steps are taken on very little information. Ramping the learning rate up over the first updates lets those statistics settle before large steps, which makes the start of training smoother and less sensitive to the first few batches.

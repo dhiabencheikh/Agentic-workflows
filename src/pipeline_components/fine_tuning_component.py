@@ -171,6 +171,8 @@ def fine_tuning_component(
         num_train_epochs=hp["num_train_epochs"],
         max_steps=max_steps,
         learning_rate=hp["learning_rate"],
+        lr_scheduler_type=hp["lr_scheduler_type"],
+        warmup_ratio=hp["warmup_ratio"],
         per_device_train_batch_size=hp["per_device_train_batch_size"],
         per_device_eval_batch_size=hp["per_device_eval_batch_size"],
         gradient_accumulation_steps=hp["gradient_accumulation_steps"],

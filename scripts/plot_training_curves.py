@@ -32,18 +32,23 @@ def main() -> None:
     train = [(e.step, e.value) for e in acc.Scalars("train/loss")]
     # The last eval point is the re-evaluation of the best checkpoint after training, not a training-time point.
     val = [(e.step, e.value) for e in acc.Scalars("eval/loss") if e.step != args.final_step]
+    lr = [(e.step, e.value) for e in acc.Scalars("train/learning_rate")]
+    grad = [(e.step, e.value) for e in acc.Scalars("train/grad_norm")]
 
     with open(args.csv, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["series", "update", "loss"])
-        writer.writerows([("train", s, round(v, 4)) for s, v in train] + [("validation", s, round(v, 4)) for s, v in val])
+        writer.writerows([("train", s, round(v, 4)) for s, v in train] + [("validation", s, round(v, 4)) for s, v in val]
+                         + [("learning_rate", s, f"{v:.3e}") for s, v in lr] + [("grad_norm", s, round(v, 4)) for s, v in grad])
 
     best_step, best_val = min(val, key=lambda p: p[1])
     base_val = val[0][1]
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 13})
-    fig, ax = plt.subplots(figsize=(10, 5.6), dpi=200)
+    fig, (ax, ax_lr, ax_grad) = plt.subplots(3, 1, figsize=(10, 9.2), dpi=200, sharex=True,
+                                             gridspec_kw={"height_ratios": [3, 1, 1]})
     fig.patch.set_facecolor(SURFACE)
-    ax.set_facecolor(SURFACE)
+    for a in (ax, ax_lr, ax_grad):
+        a.set_facecolor(SURFACE)
     ax.plot(*zip(*train), color=TRAIN_COLOR, linewidth=2, label="Training loss (566 cards)")
     ax.plot(*zip(*val), color=VAL_COLOR, linewidth=2, linestyle="--", marker="o", markersize=6,
             markeredgecolor=SURFACE, markeredgewidth=1.5, label="Validation loss (99 cards, unseen problems)")
@@ -55,7 +60,24 @@ def main() -> None:
                 textcoords="offset points", color=MUTED, ha="right")
     ax.text(train[-1][0] + 1, train[-1][1], "training", color=TEXT, va="center")
     ax.text(val[-1][0] + 1, val[-1][1], "validation", color=TEXT, va="center")
-    ax.set_xlabel("Update (16 cards each)", color=TEXT)
+    ax_lr.plot(*zip(*lr), color=TEXT, linewidth=2)
+    ax_lr.set_ylabel("Learning rate", color=TEXT)
+    ax_lr.text(0.02, 0.08, "full 3e-4 from update 1, no warm-up,\nlinear decay to 0 (implicit defaults)",
+               transform=ax_lr.transAxes, color=MUTED, fontsize=11, va="bottom")
+    ax_grad.plot(*zip(*grad), color=TEXT, linewidth=2)
+    ax_grad.set_ylabel("Gradient norm", color=TEXT)
+    ax_grad.annotate(f"never 0 ({min(v for _, v in grad):.2f} to {max(v for _, v in grad):.2f}): still learning",
+                     (grad[0][0], max(v for _, v in grad)), xytext=(30, 0), textcoords="offset points",
+                     color=MUTED, fontsize=11, va="top")
+    for a in (ax_lr, ax_grad):
+        a.grid(axis="y", color=GRID, linewidth=0.8)
+        for side in ("top", "right"):
+            a.spines[side].set_visible(False)
+        for side in ("left", "bottom"):
+            a.spines[side].set_color(GRID)
+        a.tick_params(colors=MUTED)
+    ax_lr.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
+    ax_grad.set_xlabel("Update (16 cards each)", color=TEXT)
     ax.set_ylabel("Loss (tutor reply tokens only)", color=TEXT)
     ax.set_title(f"Validation loss falls {100 * (base_val - best_val) / base_val:.0f}% from the base model, "
                  f"then rises: update {best_step} kept", color=TEXT, loc="left", fontsize=14, pad=12)
