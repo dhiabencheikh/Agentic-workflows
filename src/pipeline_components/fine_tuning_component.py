@@ -61,6 +61,12 @@ def fine_tuning_component(
     from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
     from trl import DataCollatorForCompletionOnlyLM, SFTConfig, SFTTrainer
 
+    function_start = time.time()  # after pip install: Kubeflow installs packages before calling us
+    marks = {}  # phase name -> seconds since function_start
+
+    def mark(name: str) -> None:
+        marks[name] = round(time.time() - function_start, 1)
+
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
     hp = hyperparameters
@@ -117,6 +123,7 @@ def fine_tuning_component(
             f"No cards left after fitting to max_seq_length={max_len}: "
             f"train {len(train)} (dropped {train_dropped}), validation {len(validation)} (dropped {val_dropped})"
         )
+    mark("tokenizer_and_data_loaded")
     logger.info(
         f"Cards: train {len(train)} (compressed {train_compressed}, dropped {train_dropped}), "
         f"validation {len(validation)} (compressed {val_compressed}, dropped {val_dropped}), "
@@ -139,6 +146,8 @@ def fine_tuning_component(
         base = prepare_model_for_kbit_training(base, use_gradient_checkpointing=True)
     else:
         base = AutoModelForCausalLM.from_pretrained(base_model_id, revision=revision, torch_dtype=torch.float32)
+
+    mark("base_model_loaded_and_quantized")
 
     lora_config = LoraConfig(
         r=hp["lora_r"],
@@ -192,6 +201,7 @@ def fine_tuning_component(
         data_collator=collator,
         processing_class=tokenizer,
     )
+    mark("trainer_ready")  # LoRA added, datasets tokenized
     trainable = sum(p.numel() for p in trainer.model.parameters() if p.requires_grad)
     total = sum(p.numel() for p in trainer.model.parameters())
     logger.info(f"Trainable parameters: {trainable:,} of {total:,}")
@@ -199,7 +209,9 @@ def fine_tuning_component(
     start = time.time()
     result = trainer.train()
     train_seconds = time.time() - start
+    mark("training_done")
     final_eval = trainer.evaluate()  # on the best checkpoint (load_best_model_at_end)
+    mark("final_evaluation_done")
 
     # Save the adapter (best checkpoint), the tokenizer and a record of the run.
     os.makedirs(model.path, exist_ok=True)
@@ -235,6 +247,22 @@ def fine_tuning_component(
             "trl": trl.__version__,
         },
     }
+    mark("saved")
+    eval_runtimes = [e["eval_runtime"] for e in trainer.state.log_history if "eval_runtime" in e]
+    evals_during_training = eval_runtimes[:-1]  # the last one is the final evaluate()
+    steps = max(trainer.state.global_step, 1)
+    info["timings_seconds"] = {
+        "marks_since_function_start": marks,
+        "setup_in_function": marks["trainer_ready"],
+        "training_including_validation": round(train_seconds, 1),
+        "validation_during_training": round(sum(evals_during_training), 1),
+        "validation_runs_during_training": len(evals_during_training),
+        "seconds_per_validation_run": round(sum(evals_during_training) / max(len(evals_during_training), 1), 1),
+        "seconds_per_update_excluding_validation": round((train_seconds - sum(evals_during_training)) / steps, 1),
+        "final_evaluation": round(final_eval["eval_runtime"], 1),
+        "save": round(marks["saved"] - marks["final_evaluation_done"], 1),
+        "note": "pip install, image pull and provisioning happen before this function: see Cloud Logging",
+    }
     with open(os.path.join(model.path, "training_info.json"), "w", encoding="utf-8") as file:
         json.dump(info, file, indent=2)
 
@@ -244,6 +272,9 @@ def fine_tuning_component(
     for key in ("train_cards", "validation_cards", "cards_compressed", "global_steps", "best_eval_loss",
                 "final_train_loss", "train_seconds", "seconds_per_step", "trainable_parameters"):
         metrics.log_metric(key, info[key])
+    for key, value in info["timings_seconds"].items():
+        if isinstance(value, (int, float)):
+            metrics.log_metric(f"time_{key}", value)
     if info["peak_gpu_memory_gb"] is not None:
         metrics.log_metric("peak_gpu_memory_gb", info["peak_gpu_memory_gb"])
     model.metadata.update({"base_model_id": base_model_id, "base_model_revision": revision or "local",

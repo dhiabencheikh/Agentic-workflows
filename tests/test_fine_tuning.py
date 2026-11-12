@@ -101,6 +101,12 @@ def test_training_runs_and_saves_adapter_tokenizer_and_record(tmp_path, tiny_mod
     assert info["prompt_versions"] == ["0.0.0-test"]
     assert info["hyperparameters"]["learning_rate"] == FINE_TUNING_HYPERPARAMETERS["learning_rate"]
     assert len(info["eval_history"]) >= 1
+    timings = info["timings_seconds"]
+    for key in ("setup_in_function", "training_including_validation", "validation_during_training",
+                "seconds_per_update_excluding_validation", "final_evaluation", "save"):
+        assert timings[key] >= 0, key
+    marks = list(timings["marks_since_function_start"].values())
+    assert marks == sorted(marks), "phase marks must be in chronological order"
 
 
 def test_only_lora_parameters_are_trained(tmp_path, tiny_model_dir):
