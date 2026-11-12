@@ -39,7 +39,7 @@ def inference_component(
         setup: "a", "b" or "c".
         base_model_id, base_model_revision: pinned base model (a local folder works for tests).
         system_prompt, prompt_version: from prompts/ via the runner; ignored in setup a.
-        generation: GENERATION_PARAMETERS from constants.py.
+        generation: GENERATION_PARAMETERS from src/serving_contract.py.
         extra_cases_uri: "" or a JSONL file of hand-written cases (eval/README.md format).
         max_cases: 0 for all cases; N for a smoke run on the first N.
         predictions: output JSONL, one prediction per case.

@@ -16,7 +16,6 @@ from src.constants import (
     BASE_MODEL_REVISION,
     EVAL_PIPELINE_NAME,
     EVAL_RUN_MODES,
-    GENERATION_PARAMETERS,
     M1_TEST_DATASET_URI,
     PIPELINE_LABELS,
     PIPELINE_ROOT_PATH,
@@ -24,6 +23,7 @@ from src.constants import (
     REGION,
 )
 from src.pipelines.evaluation_pipeline import build_evaluation_pipeline
+from src.serving_contract import GENERATION_PARAMETERS
 from src.prompts import TUTOR_PROMPT_VERSION, load_tutor_prompt
 
 if __name__ == "__main__":

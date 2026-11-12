@@ -7,9 +7,10 @@ import pytest
 from kfp.dsl import Dataset, Model
 from transformers import AutoTokenizer
 
-from src.constants import BASE_MODEL_ID, BASE_MODEL_REVISION, FINE_TUNING_HYPERPARAMETERS, GENERATION_PARAMETERS
+from src.constants import BASE_MODEL_ID, BASE_MODEL_REVISION, FINE_TUNING_HYPERPARAMETERS
 from src.eval_cases import build_messages, card_to_case
 from src.pipeline_components.inference_component import inference_component
+from src.serving_contract import GENERATION_PARAMETERS
 from src.prompts import TUTOR_PROMPT_VERSION, load_tutor_prompt
 
 PROMPT = load_tutor_prompt()
