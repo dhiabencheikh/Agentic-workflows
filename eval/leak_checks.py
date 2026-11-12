@@ -60,31 +60,45 @@ def _is_toy_example(block: str, bug_code: str) -> bool:
     return match_count <= 1
 
 
-def _extract_fix_snippets(bug_fixes: str) -> list[str]:
-    """Extract candidate solution tokens/phrases from the bug_fixes description."""
+def _replacement_snippets(bug_fixes: str) -> list[str]:
+    """The NEW code in bug_fixes: what comes after "with" or "to".
+
+    "Replace `range(n)` with `range(1, n + 1)`" gives ["range(1, n + 1)"]: the old side
+    (`range(n)`) is the student's own code, and mentioning it is not a leak.
+    Fenced code after "with"/"to" (e.g. "Replace line 4 with the following lines: ```py ...```")
+    gives one snippet per code line.
+    """
     snippets: list[str] = []
+    fenced_after_keyword = r"\b(?:with|to)\b[^`]*?```(?:py|python)?\s*\n?(.*?)```"
+    for match in re.finditer(fenced_after_keyword, bug_fixes, re.DOTALL | re.IGNORECASE):
+        snippets += [line.strip() for line in match.group(1).splitlines() if line.strip()]
+    text = re.sub(r"```.*?```", " ", bug_fixes, flags=re.DOTALL)
+    for clause in re.split(r"(?<=[.;])\s+|\n", text):
+        keyword = re.search(r"\b(?:with|to)\b", clause, re.IGNORECASE)
+        if keyword:
+            snippets += [s.strip() for s in re.findall(r"`([^`]+)`", clause[keyword.end():])]
+    return list(dict.fromkeys(s for s in snippets if s))
 
-    # 1. Backticked snippets
-    backtick_matches = re.findall(r"`([^`]+)`", bug_fixes)
-    if backtick_matches:
-        snippets.extend(backtick_matches)
 
-    # 2. Look for phrases like 'to X' or 'with X'
-    target_matches = re.findall(
-        r"(?:to|with|into|replace with)\s+([`'\"]?[^\s,.]+[`'\"]?)",
-        bug_fixes,
-        re.IGNORECASE,
-    )
-    for m in target_matches:
-        clean_m = m.strip("`'\"")
-        if clean_m and clean_m not in snippets:
-            snippets.append(clean_m)
+def _new_fix_snippets(bug_fixes: str, bug_code: str) -> list[str]:
+    """Replacement snippets that are not already in the student's code.
 
-    # 3. Whole string if no backticks found
-    if not snippets and bug_fixes.strip():
-        snippets.append(bug_fixes.strip())
+    A name that already exists in the code (e.g. a variable the fix switches to) can be
+    mentioned in a question without giving the fix away.
+    """
+    student_code = " ".join(_clean_bug_code(bug_code))
+    return [s for s in _replacement_snippets(bug_fixes) if s not in student_code]
 
-    return snippets
+
+def _directive_patterns(escaped_fix: str) -> list[str]:
+    """Phrasings that state a fix outright. Every verb has a word boundary ("because" is not "use")."""
+    verbs = r"\b(?:change|replace|switch|convert|rewrite)\b"
+    return [
+        rf"{verbs}[^\n.]*?\b(?:to|with)\s+[`'\"]?{escaped_fix}",
+        rf"\b(?:should be|ought to be|needs to be|must be|should read)\s+[`'\"]?{escaped_fix}",
+        rf"\b(?:use|write|add|insert|put)\s+[`'\"]?{escaped_fix}",
+        rf"{escaped_fix}[`'\"]?\s+instead\s+of\b",
+    ]
 
 
 def check_leak(reply: str, bug_code: str, bug_fixes: str) -> LeakResult:
@@ -104,40 +118,25 @@ def check_leak(reply: str, bug_code: str, bug_fixes: str) -> LeakResult:
                 "reason": f"Assistant provided a complete function definition for '{fn}'.",
             }
 
-    # 2. Explicit fix leak
-    fix_snippets = _extract_fix_snippets(bug_fixes)
-    for fix in fix_snippets:
-        fix_clean = fix.strip()
-        if not fix_clean:
-            continue
-
-        # Short operators/expressions (e.g., '==', 'i + 1', '<=')
-        escaped = re.escape(fix_clean)
-        directive_patterns = [
-            rf"(?:change|replace|switch|convert)\b[^\n.]*?\bto\s+[`'\"]?{escaped}[`'\"]?",
-            rf"(?:change|replace|switch|convert)\b[^\n.]*?\bwith\s+[`'\"]?{escaped}[`'\"]?",
-            rf"(?:should be|ought to be|needs to be|must be)\s+[`'\"]?{escaped}[`'\"]?",
-            rf"(?:use|write)\s+[`'\"]?{escaped}[`'\"]?",
-        ]
-        for pat in directive_patterns:
+    # 2. Explicit fix leak: only NEW code from the answer key counts (see _new_fix_snippets)
+    for fix in _new_fix_snippets(bug_fixes, bug_code):
+        escaped = re.escape(fix)
+        for pat in _directive_patterns(escaped):
             if re.search(pat, reply, re.IGNORECASE):
                 return {
                     "is_leak": True,
                     "leak_type": "explicit_fix",
-                    "reason": f"Assistant explicitly gave the fix instruction '{fix_clean}'.",
+                    "reason": f"Assistant explicitly gave the fix instruction '{fix}'.",
                 }
 
-        # Substantial code phrases/snippets (> 5 chars, e.g. multi-word fixes)
-        if len(fix_clean) > 5 and fix_clean in reply:
-            is_in_toy = any(
-                fix_clean in block and _is_toy_example(block, bug_code)
-                for block in code_blocks
-            )
+        # Substantial code phrases (> 5 chars) copied into the reply, outside toy examples
+        if len(fix) > 5 and fix in reply:
+            is_in_toy = any(fix in block and _is_toy_example(block, bug_code) for block in code_blocks)
             if not is_in_toy:
                 return {
                     "is_leak": True,
                     "leak_type": "explicit_fix",
-                    "reason": f"Assistant included the fix snippet '{fix_clean}'.",
+                    "reason": f"Assistant included the fix snippet '{fix}'.",
                 }
 
     return {"is_leak": False, "leak_type": None, "reason": None}
