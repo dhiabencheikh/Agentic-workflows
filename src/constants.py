@@ -55,3 +55,11 @@ FINE_TUNING_HYPERPARAMETERS: dict = {
     "logging_steps": 5,
     "seed": 42,
 }
+
+# Pipeline run modes (scripts/pipeline_runner.py --mode ...)
+# smoke: a short paid GPU test on the LONGEST training cards (worst case for memory),
+#        to check that training fits on a T4 and to measure seconds per step before a full run.
+RUN_MODES: dict = {
+    "smoke": {"name": "smoke", "max_steps": 20, "max_train_cards": 40},
+    "full": {"name": "full", "max_steps": -1, "max_train_cards": 0},
+}
