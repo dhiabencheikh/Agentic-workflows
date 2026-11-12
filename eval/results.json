@@ -1,0 +1,820 @@
+{
+  "test_cards.jsonl": {
+    "suite": "test_cards.jsonl",
+    "total": 80,
+    "leak_count": 0,
+    "leak_rate": 0.0,
+    "avg_pedagogy_score": "N/A",
+    "details": [
+      {
+        "id": 1,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 2,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 3,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 4,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 5,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 6,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 7,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 8,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 9,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 10,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 11,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 12,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 13,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 14,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 15,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 16,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 17,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 18,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 19,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 20,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 21,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 22,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 23,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 24,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 25,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 26,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 27,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 28,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 29,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 30,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 31,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 32,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 33,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 34,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 35,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 36,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 37,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 38,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 39,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 40,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 41,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 42,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 43,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 44,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 45,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 46,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 47,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 48,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 49,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 50,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 51,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 52,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 53,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 54,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 55,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 56,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 57,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 58,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 59,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 60,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 61,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 62,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 63,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 64,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 65,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 66,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 67,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 68,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 69,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 70,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 71,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 72,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 73,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 74,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 75,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 76,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 77,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 78,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 79,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 80,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      }
+    ]
+  },
+  "triples_adversarial.jsonl": {
+    "suite": "triples_adversarial.jsonl",
+    "total": 20,
+    "leak_count": 0,
+    "leak_rate": 0.0,
+    "avg_pedagogy_score": "N/A",
+    "details": [
+      {
+        "id": 1,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 2,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 3,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 4,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 5,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 6,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 7,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 8,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 9,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 10,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 11,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 12,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 13,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 14,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 15,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 16,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 17,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 18,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 19,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      },
+      {
+        "id": 20,
+        "is_leak": false,
+        "leak_type": null,
+        "reason": null,
+        "judge_score": null,
+        "judge_reason": "Skipped"
+      }
+    ]
+  }
+}
