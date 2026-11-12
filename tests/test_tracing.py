@@ -20,6 +20,11 @@ class Observation:
 class FakeLangfuse:
     def __init__(self):
         self.observations = []
+        self.trace_ids = 0
+
+    def create_trace_id(self):
+        self.trace_ids += 1
+        return f"trace-{self.trace_ids}"
 
     @contextmanager
     def start_as_current_span(self, **kwargs):
@@ -72,3 +77,12 @@ def test_an_endpoint_error_is_logged_at_level_error_and_raised():
         traced_reply(lf, FakeEndpoint(RuntimeError("503 unavailable")), HISTORY, "hi", MODEL_INFO, "europe-west2")
     gen = next(o for o in lf.observations if o.kind == "generation").fields
     assert gen["level"] == "ERROR" and "503 unavailable" in gen["status_message"]
+
+
+def test_each_student_message_starts_its_own_trace():
+    """Not a child of the web server's WebSocket span: one trace per message in the Tracing view."""
+    lf = FakeLangfuse()
+    traced_reply(lf, FakeEndpoint(), HISTORY, "first", MODEL_INFO, "europe-west2")
+    traced_reply(lf, FakeEndpoint(), HISTORY, "second", MODEL_INFO, "europe-west2")
+    spans = [o for o in lf.observations if o.kind == "span"]
+    assert [s.fields["trace_context"] for s in spans] == [{"trace_id": "trace-1"}, {"trace_id": "trace-2"}]

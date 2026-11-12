@@ -19,7 +19,7 @@ if REPLAY:
     from src.app.replay import banner, load_replay, menu, render
 else:
     from src.app.endpoint_client import TutorEndpoint
-    from src.app.tracing import traced_reply, tracing_enabled
+    from src.app.tracing import new_trace, traced_reply, tracing_enabled
     from src.constants import REGION
     from src.guardrail import SAFE_REPLY, check_input
     from src.output_guardrail import SAFE_REPLY as SAFE_OUTPUT_REPLY
@@ -29,8 +29,9 @@ else:
     if tracing_enabled():
         from langfuse import Langfuse
 
-        # Chainlit emits its own OpenTelemetry traces: keep them out of Langfuse (Session 5 practice).
-        LANGFUSE = Langfuse(blocked_instrumentation_scopes=["chainlit"])
+        # Chainlit and its FastAPI server emit their own OpenTelemetry spans (scopes "chainlit" and
+        # "fastapi", seen in the stored spans): keep them out of Langfuse (Session 5 practice).
+        LANGFUSE = Langfuse(blocked_instrumentation_scopes=["chainlit", "fastapi"])
 
 WELCOME = (
     "Hi! Paste the problem statement and your buggy Python code, then tell me what goes wrong. "
@@ -62,8 +63,8 @@ async def on_message(message: cl.Message) -> None:
     guard = check_input(message.content)
     if guard["blocked"]:  # prompt-injection guardrail: the model is not called
         if LANGFUSE:
-            with LANGFUSE.start_as_current_span(name="guardrail-block", input=message.content,
-                                                output=SAFE_REPLY, metadata=guard):
+            with LANGFUSE.start_as_current_span(name="guardrail-block", input=message.content, output=SAFE_REPLY,
+                                                metadata=guard, trace_context=new_trace(LANGFUSE)):
                 pass
             LANGFUSE.flush()
         await cl.Message(content=SAFE_REPLY).send()
@@ -87,8 +88,8 @@ async def on_message(message: cl.Message) -> None:
     verdict = check_reply(reply, history)
     if verdict["blocked"]:  # output guardrail: the reply rewrites the student's code
         if LANGFUSE:
-            with LANGFUSE.start_as_current_span(name="output-guardrail-block", input=reply,
-                                                output=SAFE_OUTPUT_REPLY, metadata=verdict):
+            with LANGFUSE.start_as_current_span(name="output-guardrail-block", input=reply, output=SAFE_OUTPUT_REPLY,
+                                                metadata=verdict, trace_context=new_trace(LANGFUSE)):
                 pass
             LANGFUSE.flush()
         reply = SAFE_OUTPUT_REPLY
