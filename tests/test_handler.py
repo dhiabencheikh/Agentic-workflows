@@ -1,10 +1,16 @@
 """Local test of the serving handler's __call__ on the tiny Phi-3 (formats and M5 rules, not quality)."""
 
+import pytest
+
+# Needs the training/serving libraries (dev dependencies): skipped in CI, which installs --no-dev.
+for _lib in ("torch", "transformers", "peft"):
+    pytest.importorskip(_lib)
+
+
 import json
 import shutil
 from pathlib import Path
 
-import pytest
 from transformers import AutoTokenizer
 
 from src.handler import EndpointHandler
