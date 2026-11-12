@@ -1,0 +1,225 @@
+{"split": "train", "problem_id": "0", "bug_id": "0", "category": "B", "reply": "Here is what to change: Replace `range(0, n)` with `range(1, n)` on line 11.\nReplace `range(0, n)` with `range(0, n - 1)` on line 11.\nReplace `range(0, n)` with `range(2, n + 1)` on line 11."}
+{"split": "train", "problem_id": "0", "bug_id": "0", "category": "A", "reply": "Here is the corrected function:\n```python\ndef fibonacci(n):\n if n <= 0:\n   return \"OOPS\"\n elif n == 1:\n   return 1\n elif n == 2:\n   return 1\n else:\n    a = 0\n   b = 1\n   for i in range(1, n):\n     temp = b\n     b = a + b\n     a = temp\n   return b\n```"}
+{"split": "train", "problem_id": "0", "bug_id": "0", "category": "C", "reply": "Line 11 should be `for i in range(1, n):`."}
+{"split": "train", "problem_id": "0", "bug_id": "0", "category": "C", "reply": "Rewrite line 11 as:\n```python\nfor i in range(1, n):\n```"}
+{"split": "train", "problem_id": "0", "bug_id": "2", "category": "B", "reply": "Here is what to change: Replace `if n < 0` with `if n <= 0` on line 2."}
+{"split": "train", "problem_id": "0", "bug_id": "2", "category": "A", "reply": "Here is the corrected function:\n```python\ndef fibonacci(n):\n if n <= 0:\n   return \"OOPS\"\n elif n == 1:\n   return 1\n elif n == 2:\n   return 1\n else:\n   a = 0\n   b = 1\n   for i in range(1, n):\n     temp = b\n     b = a + b\n     a = temp\n   return b\n```"}
+{"split": "train", "problem_id": "0", "bug_id": "2", "category": "C", "reply": "Line 2 should be `if n <= 0:`."}
+{"split": "train", "problem_id": "0", "bug_id": "2", "category": "C", "reply": "Rewrite line 2 as:\n```python\nif n <= 0:\n```"}
+{"split": "train", "problem_id": "0", "bug_id": "5", "category": "B", "reply": "Here is what to change: Replace `fibonacci(n) + fibonacci(n-1)` with `fibonacci(n-1) + fibonacci(n-2)` on line 7."}
+{"split": "train", "problem_id": "0", "bug_id": "5", "category": "A", "reply": "Here is the corrected function:\n```python\ndef fibonacci(n):\n   if n <= 0:\n       return \"OOPS\"\n   elif n == 1 or n == 2:\n       return 1\n   else:\n       return fibonacci(n - 1) + fibonacci(n - 2)\n```"}
+{"split": "train", "problem_id": "0", "bug_id": "5", "category": "C", "reply": "Line 7 should be `return fibonacci(n - 1) + fibonacci(n - 2)`."}
+{"split": "train", "problem_id": "0", "bug_id": "5", "category": "C", "reply": "Rewrite line 7 as:\n```python\nreturn fibonacci(n - 1) + fibonacci(n - 2)\n```"}
+{"split": "train", "problem_id": "0", "bug_id": "6", "category": "B", "reply": "Here is what to change: Replace `and` with `or` on line 4."}
+{"split": "train", "problem_id": "0", "bug_id": "6", "category": "A", "reply": "Here is the corrected function:\n```python\ndef fibonacci(n):\n   if n <= 0:\n       return \"OOPS\"\n   elif n == 1 or n == 2:\n       return 1\n   elif n > 2:\n       a = 1\n       b = 1\n       for i in range(3, n+1):\n           c = a + b\n           a = b\n           b = c\n       return b\n```"}
+{"split": "train", "problem_id": "0", "bug_id": "6", "category": "C", "reply": "Line 4 should be `elif n == 1 or n == 2:`."}
+{"split": "train", "problem_id": "0", "bug_id": "6", "category": "C", "reply": "Rewrite line 4 as:\n```python\nelif n == 1 or n == 2:\n```"}
+{"split": "train", "problem_id": "2", "bug_id": "18", "category": "B", "reply": "Here is what to change: Replace line 5 with `purchasedCookies = people - cookies % people` an then insert a line after that containing `newCookies = cookies + purchasedCookies`.\nReplace `cookies - (cookies % people)` with `people - cookies % people + cookies` on line 5.\nRemove line 5. Add then insert the following lines in its place`leftOverCookies = cookies % people` and  `newCookies = people - leftOverCookies + cookies`."}
+{"split": "train", "problem_id": "2", "bug_id": "18", "category": "A", "reply": "Here is the corrected function:\n```python\ndef split (cookies, people):\n if cookies % people == 0:\n   return (cookies // people, 0, \"Cookies can be split evenly!\")\n else:\n   purchasedCookies = people - cookies % people\n   newCookies = cookies + purchasedCookies\n   return (newCookies, newCookies // people, \"Cookies cannot be split evenly. Bought more cookies.\")\n```"}
+{"split": "train", "problem_id": "2", "bug_id": "18", "category": "C", "reply": "Line 5 should be `purchasedCookies = people - cookies % people`."}
+{"split": "train", "problem_id": "2", "bug_id": "18", "category": "C", "reply": "Rewrite line 5 as:\n```python\npurchasedCookies = people - cookies % people\n```"}
+{"split": "train", "problem_id": "2", "bug_id": "18", "category": "C", "reply": "Line 5 should be `newCookies = cookies + purchasedCookies`."}
+{"split": "train", "problem_id": "2", "bug_id": "18", "category": "C", "reply": "Rewrite line 5 as:\n```python\nnewCookies = cookies + purchasedCookies\n```"}
+{"split": "train", "problem_id": "3", "bug_id": "20", "category": "B", "reply": "Here is what to change: Replace `>` with `>=` on line 5 and `<` with `<=` on line 10."}
+{"split": "train", "problem_id": "3", "bug_id": "20", "category": "A", "reply": "Here is the corrected function:\n```python\ndef sequenceBetween(start, end):\n   l = []\n   if(start >= end):\n       i = start\n       while i >= end:\n           l.append(i)\n           i -= 1\n   else:\n       i = start\n       while i <= end:\n           l.append(i)\n           i += 1\n\n  return l\n```"}
+{"split": "train", "problem_id": "3", "bug_id": "20", "category": "C", "reply": "Line 5 should be `while i >= end:`."}
+{"split": "train", "problem_id": "3", "bug_id": "20", "category": "C", "reply": "Rewrite line 5 as:\n```python\nwhile i >= end:\n```"}
+{"split": "train", "problem_id": "3", "bug_id": "20", "category": "C", "reply": "Line 10 should be `while i <= end:`."}
+{"split": "train", "problem_id": "3", "bug_id": "20", "category": "C", "reply": "Rewrite line 10 as:\n```python\nwhile i <= end:\n```"}
+{"split": "train", "problem_id": "4", "bug_id": "22", "category": "B", "reply": "Here is what to change: Replace `=!` with `!=` on line 4."}
+{"split": "train", "problem_id": "4", "bug_id": "22", "category": "A", "reply": "Here is the corrected function:\n```python\n def returnOdd(nums):\n  newNums = []\n  for i in nums:\n    if i % 2 != 0:\n      newNums.append(i)\n  return newNums\n```"}
+{"split": "train", "problem_id": "4", "bug_id": "22", "category": "C", "reply": "Line 4 should be `if i % 2 != 0:`."}
+{"split": "train", "problem_id": "4", "bug_id": "22", "category": "C", "reply": "Rewrite line 4 as:\n```python\nif i % 2 != 0:\n```"}
+{"split": "train", "problem_id": "4", "bug_id": "23", "category": "B", "reply": "Here is what to change: Replace `/` with `%` on line 4."}
+{"split": "train", "problem_id": "4", "bug_id": "23", "category": "A", "reply": "Here is the corrected function:\n```python\ndef returnOdd(nums):\n newNums = []\n for i in nums:\n   if i % 2 != 0:\n     newNums.append(i)\n return newNums\n```"}
+{"split": "train", "problem_id": "4", "bug_id": "23", "category": "C", "reply": "Line 4 should be `if i % 2 != 0:`."}
+{"split": "train", "problem_id": "4", "bug_id": "23", "category": "C", "reply": "Rewrite line 4 as:\n```python\nif i % 2 != 0:\n```"}
+{"split": "train", "problem_id": "4", "bug_id": "25", "category": "B", "reply": "Here is what to change: Insert a tab indentation before `return newNums` on line 6."}
+{"split": "train", "problem_id": "4", "bug_id": "26", "category": "B", "reply": "Here is what to change: Remove a tab indentation before `return newNums` on line 6."}
+{"split": "train", "problem_id": "4", "bug_id": "28", "category": "B", "reply": "Here is what to change: Add `:` after `nums` on line 3."}
+{"split": "train", "problem_id": "4", "bug_id": "28", "category": "A", "reply": "Here is the corrected function:\n```python\ndef returnOdd(nums):\n newNums = []\n for i in nums:\n   if i % 2 != 0:\n     newNums.append(i)\n return newNums\n```"}
+{"split": "train", "problem_id": "4", "bug_id": "28", "category": "C", "reply": "Line 3 should be `for i in nums:`."}
+{"split": "train", "problem_id": "4", "bug_id": "28", "category": "C", "reply": "Rewrite line 3 as:\n```python\nfor i in nums:\n```"}
+{"split": "train", "problem_id": "5", "bug_id": "30", "category": "B", "reply": "Here is what to change: Replace `sorted(words)` with `sorted(set(words))` on line 3.\nInsert a line with `words = set(words)`  after that insert another line with `words = list(set(words))` after line 2."}
+{"split": "train", "problem_id": "5", "bug_id": "30", "category": "A", "reply": "Here is the corrected function:\n```python\ndef get_words(s):\n   words = [word.lower() for word in s.split(\" \")]\n   return sorted(set(words))\n```"}
+{"split": "train", "problem_id": "5", "bug_id": "30", "category": "C", "reply": "Line 3 should be `return sorted(set(words))`."}
+{"split": "train", "problem_id": "5", "bug_id": "30", "category": "C", "reply": "Rewrite line 3 as:\n```python\nreturn sorted(set(words))\n```"}
+{"split": "train", "problem_id": "8", "bug_id": "36", "category": "B", "reply": "Here is what to change: Replace `def yOf(x):` with `lambda x:` on line 4.\nAfter line 2 insert the following:\n```py\ndef yOf(x, len):\n    return  x * 6 + rand.randint(1, len)\n```\nReplace `map(def yOf(x):  x * 6 + rand.randint(1, len),  range(len))` with `map(yOf, range(len), [len] * len)` on line 4.\nAfter line 4 insert the following:\n```py\ndef yOf(x):\n    return  x * 6 + rand.randint(1, len)\n```\nReplace `map(def yOf(x):  x * 6 + rand.randint(1, len),  range(len))` with `map(yOf, range(len))`."}
+{"split": "train", "problem_id": "8", "bug_id": "36", "category": "A", "reply": "Here is the corrected function:\n```python\nimport random as rand\nrand.seed(42)\ndef yOf(x, len):\n   return  x * 6 + rand.randint(1, len)\ndef my_func(len):\n   y = list(map(yOf, range(len), [len] * len))\n   return y\n```"}
+{"split": "train", "problem_id": "8", "bug_id": "36", "category": "C", "reply": "Line 3 should be `def yOf(x, len):`."}
+{"split": "train", "problem_id": "8", "bug_id": "36", "category": "C", "reply": "Rewrite line 3 as:\n```python\ndef yOf(x, len):\n```"}
+{"split": "train", "problem_id": "8", "bug_id": "36", "category": "C", "reply": "Line 3 should be `return  x * 6 + rand.randint(1, len)`."}
+{"split": "train", "problem_id": "8", "bug_id": "36", "category": "C", "reply": "Rewrite line 3 as:\n```python\nreturn  x * 6 + rand.randint(1, len)\n```"}
+{"split": "train", "problem_id": "10", "bug_id": "39", "category": "B", "reply": "Here is what to change: Replace `sen.swapcase()` with `sen = sen.swapcase()` on line 8 and on lines 5 and 7 change `sen.replace` to `sen = sen.replace`."}
+{"split": "train", "problem_id": "10", "bug_id": "39", "category": "A", "reply": "Here is the corrected function:\n```python\ndef toxNGLXSH(sen):\n  vowels = [\"a\", \"e\", \"i\", \"o\", \"u\", \"A\", \"E\", \"I\", \"O\", \"U\"]\n  for i in vowels:\n      if i.islower():\n           sen = sen.replace(i, \"x\")\n      else:\n           sen = sen.replace(i, \"X\")\n  sen = sen.swapcase()\n  return sen\n```"}
+{"split": "train", "problem_id": "10", "bug_id": "39", "category": "C", "reply": "Line 5 should be `sen = sen.replace(i, \"x\")`."}
+{"split": "train", "problem_id": "10", "bug_id": "39", "category": "C", "reply": "Rewrite line 5 as:\n```python\nsen = sen.replace(i, \"x\")\n```"}
+{"split": "train", "problem_id": "10", "bug_id": "39", "category": "C", "reply": "Line 7 should be `sen = sen.replace(i, \"X\")`."}
+{"split": "train", "problem_id": "10", "bug_id": "39", "category": "C", "reply": "Rewrite line 7 as:\n```python\nsen = sen.replace(i, \"X\")\n```"}
+{"split": "train", "problem_id": "11", "bug_id": "40", "category": "B", "reply": "Here is what to change: Replace `=` with `==` on line 5."}
+{"split": "train", "problem_id": "11", "bug_id": "40", "category": "A", "reply": "Here is the corrected function:\n```python\ndef is_palindrome(string):\n rev_string = ''\n for i in string:\n   rev_string = i + rev_string\n if rev_string == string:\n   return True\n else:\n   return False\n```"}
+{"split": "train", "problem_id": "11", "bug_id": "40", "category": "C", "reply": "Line 5 should be `if rev_string == string:`."}
+{"split": "train", "problem_id": "11", "bug_id": "40", "category": "C", "reply": "Rewrite line 5 as:\n```python\nif rev_string == string:\n```"}
+{"split": "train", "problem_id": "12", "bug_id": "41", "category": "B", "reply": "Here is what to change: Replace `return lst[-1:]` with `return lst[::-1]` on line 2."}
+{"split": "train", "problem_id": "12", "bug_id": "41", "category": "A", "reply": "Here is the corrected function:\n```python\n def reverse_list(lst):\n    return lst[::-1]\n```"}
+{"split": "train", "problem_id": "12", "bug_id": "41", "category": "C", "reply": "Line 2 should be `return lst[::-1]`."}
+{"split": "train", "problem_id": "12", "bug_id": "41", "category": "C", "reply": "Rewrite line 2 as:\n```python\nreturn lst[::-1]\n```"}
+{"split": "train", "problem_id": "13", "bug_id": "42", "category": "B", "reply": "Here is what to change: Replace `lst2` with `lst` on line 3."}
+{"split": "train", "problem_id": "13", "bug_id": "42", "category": "A", "reply": "Here is the corrected function:\n```python\ndef limitFinder(lst, limit):\n lst2 = []\n for i in lst:\n   if i < limit:\n     lst2.append(i)\n return lst2\n```"}
+{"split": "train", "problem_id": "13", "bug_id": "42", "category": "C", "reply": "Line 3 should be `for i in lst:`."}
+{"split": "train", "problem_id": "13", "bug_id": "42", "category": "C", "reply": "Rewrite line 3 as:\n```python\nfor i in lst:\n```"}
+{"split": "train", "problem_id": "14", "bug_id": "43", "category": "B", "reply": "Here is what to change: Replace `true` with `True` and `false` with `False` on lines 8 and 10."}
+{"split": "train", "problem_id": "14", "bug_id": "43", "category": "A", "reply": "Here is the corrected function:\n```python\ndef isTwice(str, chr):\n count = 0\n for i in str:\n   if i == chr:\n     count+=1\n\n if count >= 2:\n   return True\n else:\n   return False\n```"}
+{"split": "train", "problem_id": "14", "bug_id": "43", "category": "C", "reply": "Line 8 should be `return True`."}
+{"split": "train", "problem_id": "14", "bug_id": "43", "category": "C", "reply": "Rewrite line 8 as:\n```python\nreturn True\n```"}
+{"split": "train", "problem_id": "14", "bug_id": "43", "category": "C", "reply": "Line 10 should be `return False`."}
+{"split": "train", "problem_id": "14", "bug_id": "43", "category": "C", "reply": "Rewrite line 10 as:\n```python\nreturn False\n```"}
+{"split": "train", "problem_id": "16", "bug_id": "46", "category": "B", "reply": "Here is what to change: After line 11, insert the following outside the while loop scope:\n```py\nlast_str = s[start:]\nlast_len = len(last_str)\nif last_len > max_len:\n       max_len = last_len\n```"}
+{"split": "train", "problem_id": "16", "bug_id": "46", "category": "A", "reply": "Here is the corrected function:\n```python\ndef substr_len(s, t):\n   max_len = 0\n   start = 0\n   pos = s.find(t, start)\n   while pos != -1:\n       crt_str = s[start:pos]\n       crt_len = len(crt_str)\n       if crt_len > max_len:\n           max_len = crt_len\n       start = pos + len(t)\n       pos = s.find(t, start)\n\n   last_str = s[start:]\n   last_len = len(last_str)\n   if last_len > max_len:\n       max_len = last_len\n\n   return max_len\n```"}
+{"split": "train", "problem_id": "16", "bug_id": "46", "category": "C", "reply": "Line 12 should be `last_str = s[start:]`."}
+{"split": "train", "problem_id": "16", "bug_id": "46", "category": "C", "reply": "Rewrite line 12 as:\n```python\nlast_str = s[start:]\n```"}
+{"split": "train", "problem_id": "16", "bug_id": "46", "category": "C", "reply": "Line 12 should be `last_len = len(last_str)`."}
+{"split": "train", "problem_id": "16", "bug_id": "46", "category": "C", "reply": "Rewrite line 12 as:\n```python\nlast_len = len(last_str)\n```"}
+{"split": "train", "problem_id": "16", "bug_id": "56", "category": "B", "reply": "Here is what to change: On line 8 insert the code `start = pos + len(t)`."}
+{"split": "train", "problem_id": "16", "bug_id": "56", "category": "A", "reply": "Here is the corrected function:\n```python\ndef substr_len(s, t):\n   max_len = 0\n   start = 0\n   pos = s.find(t, start)\n   while pos != -1:\n       crt_str = s[start:pos]\n       max_len = max(len(crt_str), max_len)\n       start = pos + len(t)\n       pos = s.find(t, start)\n\n   last_str = s[start:]\n   max_len = max(len(last_str), max_len)\n\n   return max_len\n```"}
+{"split": "train", "problem_id": "16", "bug_id": "56", "category": "C", "reply": "Line 8 should be `start = pos + len(t)`."}
+{"split": "train", "problem_id": "16", "bug_id": "56", "category": "C", "reply": "Rewrite line 8 as:\n```python\nstart = pos + len(t)\n```"}
+{"split": "train", "problem_id": "17", "bug_id": "47", "category": "B", "reply": "Here is what to change: On line 5, replace `lst.pop(max(lst))` with `lst.remove(max(lst))`"}
+{"split": "train", "problem_id": "17", "bug_id": "47", "category": "A", "reply": "Here is the corrected function:\n```python\ndef top_k(lst, k):\n   result = []\n   for i in range(k):\n       result.append(max(lst))\n       lst.remove(max(lst))\n   return result\n```"}
+{"split": "train", "problem_id": "17", "bug_id": "47", "category": "C", "reply": "Line 5 should be `lst.remove(max(lst))`."}
+{"split": "train", "problem_id": "17", "bug_id": "47", "category": "C", "reply": "Rewrite line 5 as:\n```python\nlst.remove(max(lst))\n```"}
+{"split": "train", "problem_id": "19", "bug_id": "49", "category": "B", "reply": "Here is what to change: On line 4, replace `(1, len(sentence))` with `(len(sentence)):`\nOn line 4, replace `(1, len(sentence))` with `(0, len(sentence)):`"}
+{"split": "train", "problem_id": "19", "bug_id": "49", "category": "A", "reply": "Here is the corrected function:\n```python\n def count_words(sentence):\n    words = 0\n    space_mode = True\n    for i in range(len(sentence)):\n        if sentence[i] == ' ':\n            if not space_mode:\n                words += 1\n            space_mode = True\n        else:\n            space_mode = False\n    if not space_mode:\n        words +=1\n    return words\n```"}
+{"split": "train", "problem_id": "19", "bug_id": "49", "category": "C", "reply": "Line 4 should be `for i in range(len(sentence)):`."}
+{"split": "train", "problem_id": "19", "bug_id": "49", "category": "C", "reply": "Rewrite line 4 as:\n```python\nfor i in range(len(sentence)):\n```"}
+{"split": "train", "problem_id": "19", "bug_id": "50", "category": "B", "reply": "Here is what to change: Insert the following after line 10 outside the scope of the for loop:\n```py\nif not space_mode:\n     words +=1\n```"}
+{"split": "train", "problem_id": "19", "bug_id": "50", "category": "A", "reply": "Here is the corrected function:\n```python\n def count_words(sentence):\n    words = 0\n    space_mode = True\n    for c in sentence:\n        if c == ' ':\n            if not space_mode:\n                words += 1\n            space_mode = True\n        else:\n            space_mode = False\n    if not space_mode:\n        words +=1\n    return words\n```"}
+{"split": "train", "problem_id": "19", "bug_id": "50", "category": "C", "reply": "Line 11 should be `if not space_mode:`."}
+{"split": "train", "problem_id": "19", "bug_id": "50", "category": "C", "reply": "Rewrite line 11 as:\n```python\nif not space_mode:\n```"}
+{"split": "train", "problem_id": "19", "bug_id": "50", "category": "C", "reply": "Line 11 should be `words +=1`."}
+{"split": "train", "problem_id": "19", "bug_id": "50", "category": "C", "reply": "Rewrite line 11 as:\n```python\nwords +=1\n```"}
+{"split": "train", "problem_id": "21", "bug_id": "52", "category": "B", "reply": "Here is what to change: On line 3, change `<` to `<=`."}
+{"split": "train", "problem_id": "21", "bug_id": "52", "category": "A", "reply": "Here is the corrected function:\n```python\ndef fToC(temp):\n c = (temp - 32) * (5/9)\n if c <= 0:\n   return \"Freezing!\"\n else:\n   return \"It's not freezing!\"\n```"}
+{"split": "train", "problem_id": "21", "bug_id": "52", "category": "C", "reply": "Line 3 should be `if c <= 0:`."}
+{"split": "train", "problem_id": "21", "bug_id": "52", "category": "C", "reply": "Rewrite line 3 as:\n```python\nif c <= 0:\n```"}
+{"split": "train", "problem_id": "22", "bug_id": "53", "category": "B", "reply": "Here is what to change: On line 4, replace `/` with `%` and on line 4."}
+{"split": "train", "problem_id": "22", "bug_id": "53", "category": "A", "reply": "Here is the corrected function:\n```python\n def cookiePurchase(cookies):\n    price = cookies * 1.75\n    discount = 0\n    if cookies > 10 and cookies % 10 == 0:\n        discount = price * 0.1\n        price = price - discount\n    return {\"discount\": discount, \"price\": price}\n```"}
+{"split": "train", "problem_id": "22", "bug_id": "53", "category": "C", "reply": "Line 4 should be `if cookies > 10 and cookies % 10 == 0:`."}
+{"split": "train", "problem_id": "22", "bug_id": "53", "category": "C", "reply": "Rewrite line 4 as:\n```python\nif cookies > 10 and cookies % 10 == 0:\n```"}
+{"split": "train", "problem_id": "25", "bug_id": "55", "category": "B", "reply": "Here is what to change: After line 10, insert a line `new_node.next = curr_head.next`"}
+{"split": "train", "problem_id": "25", "bug_id": "55", "category": "A", "reply": "Here is the corrected function:\n```python\nclass Node:\n   def __init__(self, data=None, next=None):\n       self.data = data\n       self.next = next\n\ndef insert_after(head, prev_data, new_data):\n   curr_head = head\n   while curr_head is not None:\n       if curr_head.data == prev_data:\n          new_node = Node(data=new_data)\n          new_node.next = curr_head.next\n          curr_head.next = new_node\n          return\n      else:\n          curr_head = curr_head.next\n\n  return \"Previous node is not in linked list\"\n```"}
+{"split": "train", "problem_id": "25", "bug_id": "55", "category": "C", "reply": "Line 11 should be `new_node.next = curr_head.next`."}
+{"split": "train", "problem_id": "25", "bug_id": "55", "category": "C", "reply": "Rewrite line 11 as:\n```python\nnew_node.next = curr_head.next\n```"}
+{"split": "train", "problem_id": "56", "bug_id": "15", "category": "B", "reply": "Here is what to change: Replace `x + y` with `(x + y)` on line 2."}
+{"split": "train", "problem_id": "56", "bug_id": "15", "category": "A", "reply": "Here is the corrected function:\n```python\ndef calculate_average(x, y):\n   return (x + y) / 2\n```"}
+{"split": "train", "problem_id": "56", "bug_id": "15", "category": "C", "reply": "Line 2 should be `return (x + y) / 2`."}
+{"split": "train", "problem_id": "56", "bug_id": "15", "category": "C", "reply": "Rewrite line 2 as:\n```python\nreturn (x + y) / 2\n```"}
+{"split": "train", "problem_id": "58", "bug_id": "58", "category": "B", "reply": "Here is what to change: Replace `/` with `//` on line 2."}
+{"split": "train", "problem_id": "58", "bug_id": "58", "category": "A", "reply": "Here is the corrected function:\n```python\ndef split_apples(apples, children):\n   return apples // children\n```"}
+{"split": "train", "problem_id": "58", "bug_id": "58", "category": "C", "reply": "Line 2 should be `return apples // children`."}
+{"split": "train", "problem_id": "58", "bug_id": "58", "category": "C", "reply": "Rewrite line 2 as:\n```python\nreturn apples // children\n```"}
+{"split": "train", "problem_id": "58", "bug_id": "59", "category": "B", "reply": "Here is what to change: Replace `apples > children` with `apples >= children` on line 3."}
+{"split": "train", "problem_id": "58", "bug_id": "59", "category": "A", "reply": "Here is the corrected function:\n```python\ndef split_apples(apples, children):\n   i = 0\n   while apples > 0 and apples >= children:\n       apples = apples - children\n       i += 1\n   return i\n```"}
+{"split": "train", "problem_id": "58", "bug_id": "59", "category": "C", "reply": "Line 3 should be `while apples > 0 and apples >= children:`."}
+{"split": "train", "problem_id": "58", "bug_id": "59", "category": "C", "reply": "Rewrite line 3 as:\n```python\nwhile apples > 0 and apples >= children:\n```"}
+{"split": "train", "problem_id": "59", "bug_id": "60", "category": "B", "reply": "Here is what to change: Add `return` before `a * b`."}
+{"split": "train", "problem_id": "59", "bug_id": "60", "category": "A", "reply": "Here is the corrected function:\n```python\ndef Product(a, b):\nreturn a * b\n```"}
+{"split": "train", "problem_id": "59", "bug_id": "60", "category": "C", "reply": "Line 2 should be `return a * b`."}
+{"split": "train", "problem_id": "59", "bug_id": "60", "category": "C", "reply": "Rewrite line 2 as:\n```python\nreturn a * b\n```"}
+{"split": "train", "problem_id": "60", "bug_id": "61", "category": "B", "reply": "Here is what to change: Change the > to >= in all the conditions."}
+{"split": "train", "problem_id": "60", "bug_id": "61", "category": "A", "reply": "Here is the corrected function:\n```python\ndef Largest(a, b, c):\nif(a >= b and a >= c):\n\treturn a\nelif(b >= a and b >= c):\n\treturn b\nelif(c >= a and c >= b):\n\treturn c\n```"}
+{"split": "train", "problem_id": "60", "bug_id": "61", "category": "C", "reply": "Line 2 should be `if(a >= b and a >= c):`."}
+{"split": "train", "problem_id": "60", "bug_id": "61", "category": "C", "reply": "Rewrite line 2 as:\n```python\nif(a >= b and a >= c):\n```"}
+{"split": "train", "problem_id": "60", "bug_id": "61", "category": "C", "reply": "Line 4 should be `elif(b >= a and b >= c):`."}
+{"split": "train", "problem_id": "60", "bug_id": "61", "category": "C", "reply": "Rewrite line 4 as:\n```python\nelif(b >= a and b >= c):\n```"}
+{"split": "train", "problem_id": "61", "bug_id": "62", "category": "B", "reply": "Here is what to change: Replace `1` with `0` to ensure that the sum is even."}
+{"split": "train", "problem_id": "61", "bug_id": "62", "category": "A", "reply": "Here is the corrected function:\n```python\ndef SumIsEven(a, b):\n   inputSum = a + b\nreturn inputSum % 2 == 0\n```"}
+{"split": "train", "problem_id": "61", "bug_id": "62", "category": "C", "reply": "Line 2 should be `inputSum = a + b`."}
+{"split": "train", "problem_id": "61", "bug_id": "62", "category": "C", "reply": "Rewrite line 2 as:\n```python\ninputSum = a + b\n```"}
+{"split": "train", "problem_id": "61", "bug_id": "62", "category": "C", "reply": "Line 2 should be `return inputSum % 2 == 0`."}
+{"split": "train", "problem_id": "61", "bug_id": "62", "category": "C", "reply": "Rewrite line 2 as:\n```python\nreturn inputSum % 2 == 0\n```"}
+{"split": "train", "problem_id": "62", "bug_id": "63", "category": "B", "reply": "Here is what to change: Replace `high` with `high + 1`."}
+{"split": "train", "problem_id": "62", "bug_id": "63", "category": "A", "reply": "Here is the corrected function:\n```python\ndef SumBetween(low, high):\nnum = 0\nnewHigh = high+1\nfor i in range(low, newHigh):\n\tnum += i\nreturn num\n```"}
+{"split": "train", "problem_id": "62", "bug_id": "63", "category": "C", "reply": "Line 3 should be `newHigh = high+1`."}
+{"split": "train", "problem_id": "62", "bug_id": "63", "category": "C", "reply": "Rewrite line 3 as:\n```python\nnewHigh = high+1\n```"}
+{"split": "train", "problem_id": "62", "bug_id": "63", "category": "C", "reply": "Line 3 should be `for i in range(low, newHigh):`."}
+{"split": "train", "problem_id": "62", "bug_id": "63", "category": "C", "reply": "Rewrite line 3 as:\n```python\nfor i in range(low, newHigh):\n```"}
+{"split": "train", "problem_id": "63", "bug_id": "64", "category": "B", "reply": "Here is what to change: Insert `pizzas >= 10 and` before `pizzas <= 20 and not(weekend)` in the elif condition on line 4."}
+{"split": "train", "problem_id": "63", "bug_id": "64", "category": "A", "reply": "Here is the corrected function:\n```python\ndef GoodDinner(pizzas, weekend):\n       if(pizzas >= 10 and weekend):\n               return True\n       elif(pizzas >= 10 and pizzas <= 20 and not(weekend)):\n               return True\n       return False\n```"}
+{"split": "train", "problem_id": "63", "bug_id": "64", "category": "C", "reply": "Line 4 should be `elif(pizzas >= 10 and pizzas <= 20 and not(weekend)):`."}
+{"split": "train", "problem_id": "63", "bug_id": "64", "category": "C", "reply": "Rewrite line 4 as:\n```python\nelif(pizzas >= 10 and pizzas <= 20 and not(weekend)):\n```"}
+{"split": "train", "problem_id": "64", "bug_id": "65", "category": "B", "reply": "Here is what to change: Replace `1` with `0` in the `range` call on line 3."}
+{"split": "train", "problem_id": "64", "bug_id": "65", "category": "A", "reply": "Here is the corrected function:\n```python\ndef CountOnes(integers):\ncount = 0\nfor integer in integers:\n\tif(integer == 1):\n\t\tcount += 1\nreturn count\n```"}
+{"split": "train", "problem_id": "64", "bug_id": "65", "category": "C", "reply": "Line 3 should be `for integer in integers:`."}
+{"split": "train", "problem_id": "64", "bug_id": "65", "category": "C", "reply": "Rewrite line 3 as:\n```python\nfor integer in integers:\n```"}
+{"split": "train", "problem_id": "64", "bug_id": "65", "category": "C", "reply": "Line 3 should be `if(integer == 1):`."}
+{"split": "train", "problem_id": "64", "bug_id": "65", "category": "C", "reply": "Rewrite line 3 as:\n```python\nif(integer == 1):\n```"}
+{"split": "train", "problem_id": "65", "bug_id": "66", "category": "B", "reply": "Here is what to change: Initialize `smallest` and `largest` to the first element of array `array[0]`."}
+{"split": "train", "problem_id": "65", "bug_id": "66", "category": "A", "reply": "Here is the corrected function:\n```python\ndef Range(array):\nsmallest = array[0]\nlargest = array[0]\nfor element in array:\n\tif(element > largest):\n\t\tlargest = element\n\tif(element < smallest):\n\t\tsmallest = element\nreturn largest - smallest\n```"}
+{"split": "train", "problem_id": "65", "bug_id": "66", "category": "C", "reply": "Line 2 should be `smallest = array[0]`."}
+{"split": "train", "problem_id": "65", "bug_id": "66", "category": "C", "reply": "Rewrite line 2 as:\n```python\nsmallest = array[0]\n```"}
+{"split": "train", "problem_id": "65", "bug_id": "66", "category": "C", "reply": "Line 2 should be `largest = array[0]`."}
+{"split": "train", "problem_id": "65", "bug_id": "66", "category": "C", "reply": "Rewrite line 2 as:\n```python\nlargest = array[0]\n```"}
+{"split": "train", "problem_id": "66", "bug_id": "67", "category": "B", "reply": "Here is what to change: Initialize `index` to -1 on line 2."}
+{"split": "train", "problem_id": "66", "bug_id": "67", "category": "A", "reply": "Here is the corrected function:\n```python\ndef LastIndexOf(value, array):\nindex = -1\nfor i in range(0, len(array)):\n\tif(value == array[i]):\n\t\tindex = i\nreturn index\n```"}
+{"split": "train", "problem_id": "66", "bug_id": "67", "category": "C", "reply": "Line 2 should be `index = -1`."}
+{"split": "train", "problem_id": "66", "bug_id": "67", "category": "C", "reply": "Rewrite line 2 as:\n```python\nindex = -1\n```"}
+{"split": "train", "problem_id": "66", "bug_id": "68", "category": "B", "reply": "Here is what to change: Replace `1` with `0` in the `range` call on line 3."}
+{"split": "train", "problem_id": "66", "bug_id": "68", "category": "A", "reply": "Here is the corrected function:\n```python\ndef LastIndexOf(value, array):\nindex = -1\nfor i in range(1, len(array)):\n\tprint(array[i])\n\tif(value == array[i]):\n\t\tindex = i\nreturn index\n```"}
+{"split": "train", "problem_id": "66", "bug_id": "68", "category": "C", "reply": "Line 4 should be `print(array[i])`."}
+{"split": "train", "problem_id": "66", "bug_id": "68", "category": "C", "reply": "Rewrite line 4 as:\n```python\nprint(array[i])\n```"}
+{"split": "train", "problem_id": "66", "bug_id": "69", "category": "B", "reply": "Here is what to change: Change the `range` function on line 3 to `range(len(array)-1, -1, -1)` to iterate backwards from `len(array)-1 to -1`."}
+{"split": "train", "problem_id": "66", "bug_id": "69", "category": "A", "reply": "Here is the corrected function:\n```python\ndef LastIndexOf(value, array):\n   index = -1\n   for i in range(len(array)-1,-1,-1):\n       if(array[i] == value):\n           index = i\n           break\n   return index\n```"}
+{"split": "train", "problem_id": "66", "bug_id": "69", "category": "C", "reply": "Line 3 should be `for i in range(len(array)-1,-1,-1):`."}
+{"split": "train", "problem_id": "66", "bug_id": "69", "category": "C", "reply": "Rewrite line 3 as:\n```python\nfor i in range(len(array)-1,-1,-1):\n```"}
+{"split": "train", "problem_id": "67", "bug_id": "70", "category": "B", "reply": "Here is what to change: Change the return statement on line 4 to `math.pi * radius * radius`\nChange the return statement on line 4 to `math.pi * radius **2`"}
+{"split": "train", "problem_id": "67", "bug_id": "70", "category": "A", "reply": "Here is the corrected function:\n```python\nimport math\ndef area_circle(radius):\n   if radius < 0:\n       return 0\n   return math.pi * radius * radius\n```"}
+{"split": "train", "problem_id": "67", "bug_id": "70", "category": "C", "reply": "Line 5 should be `return math.pi * radius * radius`."}
+{"split": "train", "problem_id": "67", "bug_id": "70", "category": "C", "reply": "Rewrite line 5 as:\n```python\nreturn math.pi * radius * radius\n```"}
+{"split": "train", "problem_id": "69", "bug_id": "81", "category": "B", "reply": "Here is what to change: On line 4, change the for loop to `for j in range(len(list_c))`."}
+{"split": "train", "problem_id": "69", "bug_id": "81", "category": "A", "reply": "Here is the corrected function:\n```python\ndef get_combinations(list_c):\n   ans=[]\n   for i in range(0,len(list_c)):\n       for j in range(0,len(list_c)):\n           ans.append(list_c[j]+list_c[i])\n   return ans\n```"}
+{"split": "train", "problem_id": "69", "bug_id": "81", "category": "C", "reply": "Line 4 should be `for j in range(0,len(list_c)):`."}
+{"split": "train", "problem_id": "69", "bug_id": "81", "category": "C", "reply": "Rewrite line 4 as:\n```python\nfor j in range(0,len(list_c)):\n```"}
+{"split": "train", "problem_id": "74", "bug_id": "77", "category": "B", "reply": "Here is what to change: On line 6, replace `i= 0.015*i` with `i= i + 0.015*i`"}
+{"split": "train", "problem_id": "74", "bug_id": "77", "category": "A", "reply": "Here is the corrected function:\n```python\ndef get_years_until(target_amount):\n   i=623\n   years=0\n   while i < target_amount:\n       years= years+1\n       i= i+0.015*i\n   return years\n```"}
+{"split": "train", "problem_id": "74", "bug_id": "77", "category": "C", "reply": "Line 6 should be `i= i+0.015*i`."}
+{"split": "train", "problem_id": "74", "bug_id": "77", "category": "C", "reply": "Rewrite line 6 as:\n```python\ni= i+0.015*i\n```"}
+{"split": "train", "problem_id": "74", "bug_id": "78", "category": "B", "reply": "Here is what to change: Move line 9 to be above line 8 and within the while loop."}
+{"split": "validation", "problem_id": "1", "bug_id": "8", "category": "B", "reply": "Here is what to change: Replace `roundedScore > 90` with `roundedScore >= 90` on line 4."}
+{"split": "validation", "problem_id": "1", "bug_id": "8", "category": "A", "reply": "Here is the corrected function:\n```python\ndef calculateGrade(hw, exams, projects, att):\n   finalScore = hw * 0.2 + exams * 0.4 + projects * 0.3 + att * 0.1\n   roundedScore = round(finalScore)\n   if roundedScore >= 90:\n       letterGrade = \"A\"\n   elif roundedScore >= 80:\n       letterGrade = \"B\"\n   elif roundedScore >= 70:\n       letterGrade = \"C\"\n   elif roundedScore >= 60:\n       letterGrade = \"D\"\n   else:\n       letterGrade = \"F\"\n   return letterGrade, roundedScore\n```"}
+{"split": "validation", "problem_id": "1", "bug_id": "8", "category": "C", "reply": "Line 4 should be `if roundedScore >= 90:`."}
+{"split": "validation", "problem_id": "1", "bug_id": "8", "category": "C", "reply": "Rewrite line 4 as:\n```python\nif roundedScore >= 90:\n```"}
+{"split": "validation", "problem_id": "1", "bug_id": "9", "category": "B", "reply": "Here is what to change: After line 2, add a new line with the following snippet `finalScore = round(finalScore)`."}
+{"split": "validation", "problem_id": "1", "bug_id": "9", "category": "A", "reply": "Here is the corrected function:\n```python\ndef calculateGrade(hw, exams, projects, att):\n   finalScore = hw * 0.2 + exams * 0.4 + projects * 0.3 + att * 0.1\n   finalScore.round()\n   if finalScore >= 90:\n       letterGrade = \"A\"\n   elif finalScore >= 80:\n       letterGrade = \"B\"\n   elif finalScore >= 70:\n       letterGrade = \"C\"\n   elif finalScore >= 60:\n       letterGrade = \"D\"\n   else:\n       letterGrade = \"F\"\n   return letterGrade, finalScore\n```"}
+{"split": "validation", "problem_id": "1", "bug_id": "9", "category": "C", "reply": "Line 3 should be `finalScore.round()`."}
+{"split": "validation", "problem_id": "1", "bug_id": "9", "category": "C", "reply": "Rewrite line 3 as:\n```python\nfinalScore.round()\n```"}
+{"split": "validation", "problem_id": "1", "bug_id": "10", "category": "B", "reply": "Here is what to change: Replace `finalScore` with `roundedScore` on lines 10, 12, 14, and 16."}
+{"split": "validation", "problem_id": "1", "bug_id": "10", "category": "A", "reply": "Here is the corrected function:\n```python\ndef calculateGrade(hw, exams, projects, att):\n   hw = hw * 0.2\n   exams = exams * 0.4\n   projects = projects * 0.30\n   att = att * 0.10\n\n   finalScore = hw + exams + projects + att\n   roundedScore = round(finalScore)\n\n   if roundedScore >= 90:\n       letterGrade = \"A\"\n   elif roundedScore >= 80:\n       letterGrade = \"B\"\n   elif roundedScore >= 70:\n       letterGrade = \"C\"\n   elif roundedScore >= 60:\n       letterGrade = \"D\"\n   else:\n       letterGrade = \"F\"\n   return letterGrade, roundedScore\n```"}
+{"split": "validation", "problem_id": "1", "bug_id": "10", "category": "C", "reply": "Line 10 should be `if roundedScore >= 90:`."}
+{"split": "validation", "problem_id": "1", "bug_id": "10", "category": "C", "reply": "Rewrite line 10 as:\n```python\nif roundedScore >= 90:\n```"}
+{"split": "validation", "problem_id": "1", "bug_id": "10", "category": "C", "reply": "Line 12 should be `elif roundedScore >= 80:`."}
+{"split": "validation", "problem_id": "1", "bug_id": "10", "category": "C", "reply": "Rewrite line 12 as:\n```python\nelif roundedScore >= 80:\n```"}
+{"split": "validation", "problem_id": "1", "bug_id": "11", "category": "B", "reply": "Here is what to change: Remove line 15 and replace `letterGrade` with `(letterGrade, roundedScore)` on line 15."}
+{"split": "validation", "problem_id": "1", "bug_id": "11", "category": "A", "reply": "Here is the corrected function:\n```python\ndef calculateGrade(hw, exams, projects, att):\n   finalScore = hw * 0.2 + exams * 0.4 + projects * 0.3 + att * 0.1\n   roundedScore = round(finalScore)\n   if roundedScore >= 90:\n       letterGrade = \"A\"\n   elif roundedScore >= 80:\n       letterGrade = \"B\"\n   elif roundedScore >= 70:\n       letterGrade = \"C\"\n  elif roundedScore >= 60:\n      letterGrade = \"D\"\n  else:\n      letterGrade = \"F\"\n  return (letterGrade, roundedScore)\n```"}
+{"split": "validation", "problem_id": "1", "bug_id": "11", "category": "C", "reply": "Line 1 should be `def calculateGrade(hw, exams, projects, att):`."}
+{"split": "validation", "problem_id": "1", "bug_id": "11", "category": "C", "reply": "Rewrite line 1 as:\n```python\ndef calculateGrade(hw, exams, projects, att):\n```"}
+{"split": "validation", "problem_id": "1", "bug_id": "11", "category": "C", "reply": "Line 1 should be `finalScore = hw * 0.2 + exams * 0.4 + projects * 0.3 + att * 0.1`."}
+{"split": "validation", "problem_id": "1", "bug_id": "11", "category": "C", "reply": "Rewrite line 1 as:\n```python\nfinalScore = hw * 0.2 + exams * 0.4 + projects * 0.3 + att * 0.1\n```"}
+{"split": "validation", "problem_id": "1", "bug_id": "13", "category": "B", "reply": "Here is what to change: On line 2 replace `[0.1, 0.3, 0.4, 0.2]` with `[0.2, 0.4, 0.3, 0.1]`.\nOn line 3 replace `[hw, exams, projects, att]` with  ` [att, projects, exams, hw]`."}
+{"split": "validation", "problem_id": "1", "bug_id": "13", "category": "A", "reply": "Here is the corrected function:\n```python\ndef calculateGrade(hw, exams, projects, att):\n   weights = [0.2, 0.4, 0.3, 0.1]\n   grades = [hw, exams, projects, att]\n   final_grade = 0\n   for i in range(len(weights)):\n       final_grade += weights[i] * grades[i]\n   final_grade = round(final_grade)\n\n   if final_grade >= 90:\n       return ('A', final_grade)\n   elif final_grade >= 80:\n       return ('B', final_grade)\n   elif final_grade >= 70:\n       return ('C', final_grade)\n   elif final_grade >= 60:\n       return ('D', final_grade)\n   else:\n       return ('F', final_grade)\n```"}
+{"split": "validation", "problem_id": "1", "bug_id": "13", "category": "C", "reply": "Line 2 should be `weights = [0.2, 0.4, 0.3, 0.1]`."}
+{"split": "validation", "problem_id": "1", "bug_id": "13", "category": "C", "reply": "Rewrite line 2 as:\n```python\nweights = [0.2, 0.4, 0.3, 0.1]\n```"}
+{"split": "validation", "problem_id": "9", "bug_id": "38", "category": "B", "reply": "Here is what to change: Change line 7 to `subm2 = [[matrix[1][0], matrix[1][2]], [matrix[2][0], matrix[2][2]]]` and change line 8 with `subm3 = [[matrix[1][0], matrix[1][1]], [matrix[2][0], matrix[2][1]]]`."}
+{"split": "validation", "problem_id": "9", "bug_id": "38", "category": "A", "reply": "Here is the corrected function:\n```python\n def det2d(matrix):\n    return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0]\ndef determinant(matrix):\n    subm1 = [val[1:3] for val in matrix[1:3]]\n    subm2 = [[matrix[1][0], matrix[1][2]], [matrix[2][0], matrix[2][2]]]\n    subm3 = [[matrix[1][0], matrix[1][1]], [matrix[2][0], matrix[2][1]]]\n    return matrix[0][0] * det2d(subm1) - matrix[0][1] * det2d(subm2) + matrix[0][2] * det2d(subm3)\n```"}
+{"split": "validation", "problem_id": "9", "bug_id": "38", "category": "C", "reply": "Line 7 should be `subm2 = [[matrix[1][0], matrix[1][2]], [matrix[2][0], matrix[2][2]]]`."}
+{"split": "validation", "problem_id": "9", "bug_id": "38", "category": "C", "reply": "Rewrite line 7 as:\n```python\nsubm2 = [[matrix[1][0], matrix[1][2]], [matrix[2][0], matrix[2][2]]]\n```"}
+{"split": "validation", "problem_id": "9", "bug_id": "38", "category": "C", "reply": "Line 7 should be `subm3 = [[matrix[1][0], matrix[1][1]], [matrix[2][0], matrix[2][1]]]`."}
+{"split": "validation", "problem_id": "9", "bug_id": "38", "category": "C", "reply": "Rewrite line 7 as:\n```python\nsubm3 = [[matrix[1][0], matrix[1][1]], [matrix[2][0], matrix[2][1]]]\n```"}
+{"split": "validation", "problem_id": "18", "bug_id": "48", "category": "B", "reply": "Here is what to change: After line 10 insert the following inside the `else` scope: `passwords_dict[len(passwords_dict) + 1] = password`"}
+{"split": "validation", "problem_id": "18", "bug_id": "48", "category": "A", "reply": "Here is the corrected function:\n```python\ndef validate_or_add_password(menu_choice, password, passwords_dict):\n   if menu_choice == \"v\":\n       if password in passwords_dict.values():\n           return \"Welcome!\"\n       else:\n           return \"I don't know you.\"\n   elif menu_choice == \"a\":\n       if password in passwords_dict.values():\n           return \"Password already exists!\"\n       else:\n           passwords_dict[len(passwords_dict) + 1] = password\n           return \"Password added!\"\n```"}
+{"split": "validation", "problem_id": "18", "bug_id": "48", "category": "C", "reply": "Line 11 should be `passwords_dict[len(passwords_dict) + 1] = password`."}
+{"split": "validation", "problem_id": "18", "bug_id": "48", "category": "C", "reply": "Rewrite line 11 as:\n```python\npasswords_dict[len(passwords_dict) + 1] = password\n```"}
+{"split": "validation", "problem_id": "20", "bug_id": "51", "category": "B", "reply": "Here is what to change: After line 7, insert `return result` with one indentation level."}
+{"split": "validation", "problem_id": "20", "bug_id": "51", "category": "A", "reply": "Here is the corrected function:\n```python\ndef spellchecker(words, words_to_check):\n   result = []\n   for word in words_to_check:\n       if word in words:\n           result.append(word + \" is spelled properly!\")\n       else:\n           result.append(word + \" is misspelled!\")\n   return result\n```"}
+{"split": "validation", "problem_id": "20", "bug_id": "51", "category": "C", "reply": "Line 8 should be `return result`."}
+{"split": "validation", "problem_id": "20", "bug_id": "51", "category": "C", "reply": "Rewrite line 8 as:\n```python\nreturn result\n```"}

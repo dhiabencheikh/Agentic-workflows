@@ -227,3 +227,5 @@ benjosh-socratic-tutor.json
 
 # Compiled evaluation pipeline
 benjosh-socratic-eval.json
+# Evaluation runner output (regenerated; real results go to docs/results/)
+eval/results.json
