@@ -181,6 +181,8 @@ def fine_tuning_component(
         bf16=False,
         eval_strategy="steps",
         eval_steps=hp["eval_steps"],
+        eval_on_start=hp.get("eval_on_start", False),
+        group_by_length=hp.get("group_by_length", False),
         save_strategy="steps",
         save_steps=hp["eval_steps"],
         save_total_limit=2,

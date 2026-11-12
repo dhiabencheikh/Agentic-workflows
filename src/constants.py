@@ -52,6 +52,10 @@ FINE_TUNING_HYPERPARAMETERS: dict = {
     # Above the longest card (2066 tokens, docs/results/m2_finetuning_prep.md): no card is cut
     "max_seq_length": 2304,
     "eval_steps": 10,  # validation loss every 10 updates, best checkpoint kept
+    # One validation before the first update: the base model's loss, the "before" point
+    "eval_on_start": True,
+    # Batches of cards with similar lengths: less padding, so less wasted GPU work
+    "group_by_length": True,
     "logging_steps": 5,
     "seed": 42,
 }

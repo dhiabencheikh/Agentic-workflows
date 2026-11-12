@@ -101,6 +101,8 @@ def test_training_runs_and_saves_adapter_tokenizer_and_record(tmp_path, tiny_mod
     assert info["prompt_versions"] == ["0.0.0-test"]
     assert info["hyperparameters"]["learning_rate"] == FINE_TUNING_HYPERPARAMETERS["learning_rate"]
     assert len(info["eval_history"]) >= 1
+    # eval_on_start: a validation at step 0 gives the base model's loss
+    assert info["eval_history"][0]["step"] == 0
     timings = info["timings_seconds"]
     for key in ("setup_in_function", "training_including_validation", "validation_during_training",
                 "seconds_per_update_excluding_validation", "final_evaluation", "save"):
