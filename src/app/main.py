@@ -19,6 +19,15 @@ if REPLAY:
     from src.app.replay import banner, load_replay, menu, render
 else:
     from src.app.endpoint_client import TutorEndpoint
+    from src.app.tracing import traced_reply, tracing_enabled
+    from src.constants import REGION
+
+    LANGFUSE = None
+    if tracing_enabled():
+        from langfuse import Langfuse
+
+        # Chainlit emits its own OpenTelemetry traces: keep them out of Langfuse (Session 5 practice).
+        LANGFUSE = Langfuse(blocked_instrumentation_scopes=["chainlit"])
 
 WELCOME = (
     "Hi! Paste the problem statement and your buggy Python code, then tell me what goes wrong. "
@@ -34,7 +43,9 @@ async def start() -> None:
         await cl.Message(content=banner(data) + "\n\n" + menu(data)).send()
         return
     cl.user_session.set("history", [])
-    cl.user_session.set("endpoint", TutorEndpoint())
+    endpoint = TutorEndpoint()
+    cl.user_session.set("endpoint", endpoint)
+    cl.user_session.set("model_info", endpoint.deployed_model_info() if LANGFUSE else {})
     await cl.Message(content=WELCOME).send()
 
 
@@ -47,10 +58,19 @@ async def on_message(message: cl.Message) -> None:
     history = cl.user_session.get("history")
     history.append({"role": "user", "content": message.content})
     try:
-        prediction = await cl.make_async(cl.user_session.get("endpoint").reply)(history)
+        endpoint = cl.user_session.get("endpoint")
+        if LANGFUSE:
+            reply = await cl.make_async(traced_reply)(
+                LANGFUSE, endpoint, list(history), message.content, cl.user_session.get("model_info"), REGION
+            )
+            LANGFUSE.flush()
+        else:
+            reply = (await cl.make_async(endpoint.reply)(history))["response"]
     except Exception as error:  # show the failure, keep the conversation consistent
         history.pop()
+        if LANGFUSE:
+            LANGFUSE.flush()
         await cl.Message(content=f"Sorry, the tutor is unavailable right now ({type(error).__name__}).").send()
         return
-    history.append({"role": "assistant", "content": prediction["response"]})
-    await cl.Message(content=prediction["response"]).send()
+    history.append({"role": "assistant", "content": reply})
+    await cl.Message(content=reply).send()
