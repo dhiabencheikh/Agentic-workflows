@@ -1,0 +1,35 @@
+<problem>
+Write a function `f9(n)` that returns n plus 9.
+</problem>
+<bug_code>
+1. def f9(n):
+2.   return n - 9
+</bug_code>
+<bug_desc>
+SECRET_DESC_9: line 2 subtracts instead of adding.
+</bug_desc>
+<bug_fixes>
+SECRET_FIX_9: replace `-` with `+` on line 2.
+</bug_fixes>
+<unit_tests>
+assert f9(1) == 10
+</unit_tests>
+<stu_desc>
+Beginner.
+</stu_desc>
+<dialogue>
+User: My function f9 does not work.
+Assistant: What does `f9(1)` return?
+	<alt>Which operator is on line 2?
+User: It returns a negative number.
+Assistant: Which values did you try?
+User: Only 1.
+Assistant: Good. What should it return instead?
+User: I fixed it.
+<code>
+1. def f9(n):
+2.   return n + 9
+
+</code>
+Assistant: Well done.
+</dialogue>

@@ -10,9 +10,14 @@ from src.pipeline_components.data_transformation_component import (
 @pipeline()
 def model_training_pipeline(
     raw_dataset_uri: str,
+    system_prompt: str,
+    num_validation_problems: int,
+    seed: int,
 ) -> None:
     """Model training pipeline definition."""
     data_transformation_component(
-        train_test_split_ratio=0.1,
         raw_dataset_uri=raw_dataset_uri,
+        system_prompt=system_prompt,
+        num_validation_problems=num_validation_problems,
+        seed=seed,
     )  # type: ignore
