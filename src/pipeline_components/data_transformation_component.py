@@ -16,6 +16,7 @@ from kfp.dsl import OutputPath, component
 def data_transformation_component(
     raw_dataset_uri: str,
     system_prompt: str,
+    prompt_version: str,
     num_validation_problems: int,
     seed: int,
     train_dataset: OutputPath("Dataset"),  # type: ignore
@@ -28,6 +29,7 @@ def data_transformation_component(
         raw_dataset_uri: folder (gs:// or local) holding the authors'
             `train/` and `testset/` sub-folders of `.txt` files.
         system_prompt: tutor instructions put first in every example.
+        prompt_version: semantic version of system_prompt, stored in every example.
         num_validation_problems: how many train problems go to validation.
         seed: makes the random choice of validation problems reproducible.
         train_dataset, validation_dataset, test_dataset: output JSONL paths.
@@ -226,11 +228,12 @@ def data_transformation_component(
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         with open(path, "w", encoding="utf-8") as file:
             for example in examples:
-                file.write(json.dumps({**example, "split": split}, ensure_ascii=False) + "\n")
+                record = {**example, "split": split, "prompt_version": prompt_version}
+                file.write(json.dumps(record, ensure_ascii=False) + "\n")
         problems = sorted({e["problem_id"] for e in examples}, key=int)
         logger.info(f"{split}: {len(examples)} examples from {len(problems)} problems {problems} -> {path}")
 
-    logger.info(f"Reading raw dataset from {raw_dataset_uri}")
+    logger.info(f"Reading raw dataset from {raw_dataset_uri}, system prompt v{prompt_version}")
     train_pool = deduplicate(load_split_folder("train"))
     test_examples = deduplicate(load_split_folder("testset"))
 

@@ -12,7 +12,7 @@ from src.constants import (
     SPLIT_SEED,
 )
 from src.pipelines.model_training_pipeline import model_training_pipeline
-from src.prompts.tutor_system_prompt import TUTOR_SYSTEM_PROMPT
+from src.prompts import TUTOR_PROMPT_VERSION, load_tutor_prompt
 
 if __name__ == "__main__":
     aiplatform.init(project=PROJECT_ID, location=REGION)
@@ -28,7 +28,8 @@ if __name__ == "__main__":
         pipeline_root=f"gs://{PIPELINE_ROOT_PATH}",
         parameter_values={
             "raw_dataset_uri": RAW_DATASET_URI,
-            "system_prompt": TUTOR_SYSTEM_PROMPT,
+            "system_prompt": load_tutor_prompt(TUTOR_PROMPT_VERSION),
+            "prompt_version": TUTOR_PROMPT_VERSION,
             "num_validation_problems": NUM_VALIDATION_PROBLEMS,
             "seed": SPLIT_SEED,
         },

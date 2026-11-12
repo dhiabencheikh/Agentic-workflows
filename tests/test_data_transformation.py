@@ -21,6 +21,7 @@ def run_component(tmp_path: Path, seed: int = 0, num_validation_problems: int = 
     data_transformation_component.python_func(
         raw_dataset_uri=str(FIXTURES),
         system_prompt=SYSTEM_PROMPT,
+        prompt_version="0.0.0-test",
         num_validation_problems=num_validation_problems,
         seed=seed,
         train_dataset=str(outputs["train"]),
@@ -84,6 +85,11 @@ def test_first_user_message_contains_problem_and_buggy_code(splits):
     assert "return n - 9" in first_user
 
 
+def test_every_example_records_the_prompt_version(splits):
+    for example in splits["train"] + splits["validation"] + splits["test"]:
+        assert example["prompt_version"] == "0.0.0-test"
+
+
 def test_bug_description_and_fixes_never_appear_in_the_input(splits):
     for example in splits["train"] + splits["validation"] + splits["test"]:
         text = json.dumps(example["messages"])
@@ -118,6 +124,7 @@ def test_code_block_after_a_tutor_line_goes_to_the_next_student_turn(tmp_path):
     data_transformation_component.python_func(
         raw_dataset_uri=str(Path(__file__).parent / "fixtures" / "code_after_tutor"),
         system_prompt=SYSTEM_PROMPT,
+        prompt_version="0.0.0-test",
         num_validation_problems=1,
         seed=0,
         train_dataset=str(outputs["train"]),
@@ -148,6 +155,7 @@ def test_near_copies_merge_only_on_formatting_differences(tmp_path, problem_id, 
     data_transformation_component.python_func(
         raw_dataset_uri=str(Path(__file__).parent / "fixtures" / "near_copies"),
         system_prompt=SYSTEM_PROMPT,
+        prompt_version="0.0.0-test",
         num_validation_problems=0,
         seed=0,
         train_dataset=str(outputs["train"]),
