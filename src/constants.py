@@ -80,3 +80,9 @@ RUN_MODES: dict = {
     "smoke": {"name": "smoke", "max_steps": 20, "max_train_cards": 40},
     "full": {"name": "full", "max_steps": -1, "max_train_cards": 0},
 }
+
+# Generation parameters for evaluation (M3), Session 4 slides 18-20.
+# Greedy decoding (do_sample False): same input -> same reply, so the three setups are
+# compared fairly and scores are reproducible. 256 new tokens (course example value) leaves
+# room above the longest human reply (164 tokens in train, 78 in test): a leak is not cut off.
+GENERATION_PARAMETERS: dict = {"max_new_tokens": 256, "do_sample": False}
