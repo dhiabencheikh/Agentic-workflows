@@ -5,7 +5,7 @@ import json
 from kfp import compiler
 
 from src.constants import GPU_TASK_CPU_LIMIT
-from src.pipelines.evaluation_pipeline import evaluation_pipeline
+from src.pipelines.evaluation_pipeline import build_evaluation_pipeline, evaluation_pipeline
 from src.pipelines.model_training_pipeline import model_training_pipeline
 
 
@@ -38,3 +38,13 @@ def test_evaluation_pipeline_runs_setups_a_b_c_in_sequence_on_one_gpu_each(tmp_p
         if resources:
             assert resources["accelerator"]["type"] == "NVIDIA_TESLA_T4"
             assert resources["resourceCpuLimit"] == GPU_TASK_CPU_LIMIT
+
+
+def test_evaluation_pipeline_with_setups_b_and_c_only(tmp_path):
+    spec = compile_spec(build_evaluation_pipeline(("b", "c")), tmp_path)
+    tasks = spec["root"]["dag"]["tasks"]
+    inference = {name: t for name, t in tasks.items() if name.startswith("inference-component")}
+    setups = {t["inputs"]["parameters"]["setup"]["runtimeValue"]["constant"]: name for name, t in inference.items()}
+    assert set(setups) == {"b", "c"}
+    assert setups["b"] in inference[setups["c"]].get("dependentTasks", [])
+    assert "adapter" in inference[setups["c"]]["inputs"]["artifacts"]
