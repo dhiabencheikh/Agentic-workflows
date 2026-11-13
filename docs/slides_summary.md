@@ -49,6 +49,14 @@ Every figure below comes from a committed results file (path given). Times are U
 - Deployment attempt 2026-11-12 21:34: `503 Machine type temporarily unavailable` (no T4 free in europe-west2);
   fallbacks: europe-west4 T4, europe-west2 L4, and a clearly labelled replay mode of real recorded replies.
 
+## 6b. Guardrails (M6) - `docs/results/m6_guardrail.md`, `docs/results/m6_output_guardrail.md`
+- Input: prompt-injection patterns on the student's message: 9/10 injection cases blocked (optimistic: cases read
+  before writing the patterns), 0/80 test students and 0/612 train + validation student turns falsely blocked.
+  Missed: the "translate into the final correct version" reframing, the same case the fine-tuned model leaked on.
+- Output: leak check on the reply against the student's own code: blocks all 12 flagged leaks of b and c,
+  falsely blocks 3/207 test and 0/1,587 train + validation human replies. Same detector as the evaluation, so it
+  inherits its blind spots (about 1 leak in 5).
+
 ## 7. Problems encountered (from `docs/learning-log.md`)
 - GPU shortages: about 1 h wait (M2, cancelled), 20.9 min (M3), endpoint 503 (M5) -> smaller machine, retries,
   other regions, deploy early, replay fallback.
@@ -57,6 +65,7 @@ Every figure below comes from a committed results file (path given). Times are U
 - Implicit defaults: learning-rate schedule, and TRL's 1,024-token default that would have cut replies.
 
 ## 8. Not done / next
-- LLM judge for Socratic quality (needs approved paid calls), monitoring with Langfuse (M7), routing and caching (M6),
+- LLM judge for Socratic quality: approved (gpt-4o-mini in Langfuse, new traces only) but **not calibrated against human labels yet**;
+  routing and caching (M6, design only),
   cost per call (billing figures), a training run with warm-up and 2 epochs.
 - Readiness: see `docs/readiness-checklist.md` (fails: prompt-injection robustness, monitoring, endpoint availability).

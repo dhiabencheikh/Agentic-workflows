@@ -19,6 +19,17 @@ if REPLAY:
     from src.app.replay import banner, load_replay, menu, render
 else:
     from src.app.endpoint_client import TutorEndpoint
+    from src.app.tracing import tracing_enabled
+    from src.app.turn import answer_turn
+    from src.constants import REGION
+
+    LANGFUSE = None
+    if tracing_enabled():
+        from langfuse import Langfuse
+
+        # Chainlit and its FastAPI server emit their own OpenTelemetry spans (scopes "chainlit" and
+        # "fastapi", seen in the stored spans): keep them out of Langfuse (Session 5 practice).
+        LANGFUSE = Langfuse(blocked_instrumentation_scopes=["chainlit", "fastapi"])
 
 WELCOME = (
     "Hi! Paste the problem statement and your buggy Python code, then tell me what goes wrong. "
@@ -34,7 +45,9 @@ async def start() -> None:
         await cl.Message(content=banner(data) + "\n\n" + menu(data)).send()
         return
     cl.user_session.set("history", [])
-    cl.user_session.set("endpoint", TutorEndpoint())
+    endpoint = TutorEndpoint()
+    cl.user_session.set("endpoint", endpoint)
+    cl.user_session.set("model_info", endpoint.deployed_model_info() if LANGFUSE else {})
     await cl.Message(content=WELCOME).send()
 
 
@@ -47,10 +60,18 @@ async def on_message(message: cl.Message) -> None:
     history = cl.user_session.get("history")
     history.append({"role": "user", "content": message.content})
     try:
-        prediction = await cl.make_async(cl.user_session.get("endpoint").reply)(history)
+        result = await cl.make_async(answer_turn)(
+            LANGFUSE, cl.user_session.get("endpoint"), list(history), cl.user_session.get("model_info"), REGION
+        )
     except Exception as error:  # show the failure, keep the conversation consistent
         history.pop()
         await cl.Message(content=f"Sorry, the tutor is unavailable right now ({type(error).__name__}).").send()
         return
-    history.append({"role": "assistant", "content": prediction["response"]})
-    await cl.Message(content=prediction["response"]).send()
+    finally:
+        if LANGFUSE:
+            LANGFUSE.flush()
+    if result["outcome"] == "input_blocked":
+        history.pop()  # the blocked message is not part of the tutoring conversation
+    else:
+        history.append({"role": "assistant", "content": result["reply"]})
+    await cl.Message(content=result["reply"]).send()

@@ -38,6 +38,15 @@ class TutorEndpoint:
         aiplatform.init(project=PROJECT_ID, location=region or REGION)
         self.endpoint = aiplatform.Endpoint(endpoint_id or os.environ["GCP_ENDPOINT_ID"])
 
+    def deployed_model_info(self) -> dict[str, Any]:
+        """The model currently deployed on the endpoint (for trace metadata)."""
+        deployed = self.endpoint.list_models()
+        if not deployed:
+            return {"endpoint_id": self.endpoint.name, "deployed_model": None}
+        d = deployed[0]
+        return {"endpoint_id": self.endpoint.name, "deployed_model_id": d.id, "deployed_model_name": d.display_name,
+                "model_resource": d.model, "model_version_id": d.model_version_id}
+
     def reply(self, history: list) -> dict[str, Any]:
         request = build_request(history)
         start = time.time()
