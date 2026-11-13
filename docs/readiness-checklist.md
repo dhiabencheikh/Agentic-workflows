@@ -18,7 +18,7 @@ evaluated as setup c in run `benjosh-socratic-eval-20261112215631` on n1-standar
 | 4 | Asking for the answer | leaks / ask-for-answer cases | leak check on 10 cases | 0 / 10 (*draft*) | 0 / 10 | PASS |
 | 5 | Off-topic requests | leaks / off-topic cases | leak check on 6 cases | 0 / 6 (*draft*) | 0 / 6 | PASS (redirection quality not measured: needs the judge) |
 | 6 | Better than prompting alone | best-match ROUGE-L mean, setup c vs b | `scripts/score_m3.py`, 80 test cards | c > b (*draft*) | 0.307 vs 0.221 (human ceiling 0.384) | PASS |
-| 7 | Leak check reliable | false alarms on human replies; known leaks caught (test) | `scripts/calibrate_leak_check.py --final-test` | false alarms <= 2%, caught >= 75% (*draft*) | 3 / 207 (1.4%); 29 / 36 (81%) | PASS (about 1 leak in 5 can still pass unnoticed) |
+| 7 | Leak check reliable | false alarms on human replies; known leaks caught (test) | `scripts/calibrate_leak_check.py --final-test` | false alarms <= 2%, caught >= 75% (*draft*) | 3 / 207 (1.4%); 29 / 36 (81%) | PASS (about 1 leak in 5 can still pass unnoticed; see known limitation 1) |
 | 8 | Socratic quality | LLM-judge score 1 to 5 | `eval/run_eval.py --judge` | to define | judge approved 2026-11-12 (gpt-4o-mini, new traces only, **not calibrated against human labels yet**). Run 2026-11-13 via OpenRouter on the 97 replayed model replies (`docs/results/m7_judge_scores.md`): test cards mean 4.46 (5: 62, 4: 5, 3: 6, 2: 2, 1: 5); judge cost $0.0498. Not trusted yet: the judge flags 7 / 80 test replies as leaks where the calibrated deterministic check finds 0, and reads targeted hints as leaks | MEASURED, NOT CALIBRATED |
 
 ## Reliability and performance
@@ -57,3 +57,15 @@ monitoring is partial (item 18: traces and uncalibrated judge scores yes, alerts
 only by an uncalibrated judge, and cost per call is not measured. End-to-end latency passes (P95 2.68 s on 106 replayed turns). The core
 behaviour is measured and positive: no leak on the 80 test cards, 1 on 106 cases overall, and replies closer to
 human tutors than prompting alone.
+
+## Known limitations (not covered by a passing item)
+
+1. **Leak-check blind spot** (in the repo): the base model's factorial reply gives the corrected loop
+   `for i in range(1, n + 1):` but the leak check scored it a pass (`docs/results/m3_examples.md`). Base-model leaks
+   are, if anything, under-counted, so the b vs c leak comparison (items 1 and 6) is conservative.
+2. **Tutor confirms an incorrect fix** (manual demo observation, not in a results file): Chainlit dry run, test
+   problem 24 (factorial). Student: "Set the i in range(1, n)." (still off by one); fine-tuned tutor: "Good work!",
+   then told the student to run the code. The same "Good work!" was given to the correct `range(1, n+1)`: the tutor
+   does not check a proposed fix. Langfuse traces of 2026-11-12, 23:07 to 23:41 UTC. No item measures this yet.
+   Next step: prompt v1.1.0 (MINOR: instruction added) asking the student to check a proposed fix against the
+   examples, re-evaluated through the CI gate, plus test cases with wrong student fixes.
