@@ -73,7 +73,7 @@ The 106 eval cases (80 test + 26 adversarial) sent one at a time through `src/ap
 | End-to-end latency, 97 turns that called the model | P50 1.54 s, P95 2.68 s, max 17.42 s |
 | Slowest turn | `adv-off_topic-01`, 17.4 s: 256 output tokens, the generation cap |
 | Outcomes | 96 answered, 9 blocked at input (prompt injections), 1 blocked at output (`adv-prompt_injection-03`) |
-| Judge score distribution | **not available**: judge not run (section 5) |
+| Judge score distribution | see section 5 and `docs/results/m7_judge_scores.md` |
 
 Cost per call: **not computable yet**. The endpoint is billed per hour while deployed, not per token, so cost per
 call = hourly endpoint price / calls per hour; the hourly price will come from Billing > Reports (label
@@ -100,7 +100,28 @@ read 2026-11-12, USD per 1M tokens (gpt-4o-mini 0.15 in / 0.60 out; gpt-4.1-mini
 | gpt-4.1-mini | $0.00096 / $0.00115 | $0.00186 | $0.122 |
 | gpt-4o | $0.00601 / $0.00721 | $0.01160 | $0.764 |
 
-**Status 2026-11-12: not enabled.** The `OPENAI_API_KEY` in `.env` is an OpenRouter key (`sk-or-`): OpenAI rejects it
+**Run on 2026-11-13 (00:05 UTC) by `scripts/judge_traces.py`**, not by the Langfuse UI evaluator: the third
+evaluator, `confirms_incorrect_fix`, needs the known bug (a hidden card field), which a UI evaluator cannot map. Judge
+`openai/gpt-4o-mini` through OpenRouter's OpenAI-compatible API (https://openrouter.ai/api/v1), listed at the same
+price as OpenAI (0.15 / 0.60 USD per 1M tokens, read from OpenRouter's models API). Scores are written to each
+trace in Langfuse (ids `judge-<trace>-<evaluator>`, so a rerun overwrites). Full text was read from ClickHouse
+`events_full`: `events_core` cuts input and output at 200 characters.
+
+| Evaluator | 80 test cards | 17 adversarial replies |
+|---|---|---|
+| socratic_quality (1 to 5) | mean 4.46; 5: 62, 4: 5, 3: 6, 2: 2, 1: 5 | mean 3.29; 5: 7, 4: 1, 3: 4, 1: 5 |
+| leak (0/1) | 7 flagged | 2 flagged |
+| confirms_incorrect_fix (0/1) | 14 flagged | 1 flagged |
+
+Cost: 285,092 input + 11,743 output tokens = $0.0498 for 97 traces x 3 evaluators ($0.00051 per trace).
+
+**Why these scores are not trusted yet:** the deterministic leak check, calibrated on human replies, finds 0 leaks
+on the same 80 test replies; the judge flags 7. Reading the flagged reasons, the judge counts targeted hints
+as leaks, and some `confirms_incorrect_fix` reasons only say the tutor agreed "without verifying" the fix, not that the fix was wrong (not checked case by case). Recorded as
+a limit. Next step: calibrate on human tutor replies and known leaks before using a judge score
+for alerts.
+
+Earlier status (2026-11-12): not enabled. The `OPENAI_API_KEY` in `.env` is an OpenRouter key (`sk-or-`): OpenAI rejects it
 (401 in `scripts/calibrate_judge.py`). To enable: a real OpenAI key in Langfuse's LLM connection, or an OpenRouter
 connection (OpenAI-compatible) after checking its gpt-4o-mini price. Existing traces are not scored (new traces only).
 
