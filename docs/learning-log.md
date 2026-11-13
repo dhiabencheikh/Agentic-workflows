@@ -260,3 +260,12 @@ Recorded for later milestones (CLAUDE.md section 8): M3 three setups (base witho
 **Result:** 106 turns, 0 errors; end-to-end P50 1.47 s, P95 2.68 s, P99 6.48 s, max 17.42 s (a 256-token reply). 9 injections blocked at input, the 10th blocked at output. Judge not run (OpenRouter key).
 **Problem hit and fix:** spans were children of the FastAPI WebSocket span; fix = fresh trace id per message plus blocking the `fastapi` scope.
 **Exam-style question:** Why is P99 on 106 requests a weak estimate? **Answer:** it rests on the one or two slowest values, so one outlier moves it a lot; report it with n and the max.
+
+## 2026-11-13 · M8 · Manual demo observation: the tutor confirms a wrong fix
+**In plain words:** during a Chainlit dry run, the student proposed a fix that was still wrong and the tutor said "Good work!". A good human tutor would have asked the student to test the fix on the examples first.
+**Class link:** Session 5, user-satisfaction and model metrics (a behaviour no automatic metric caught); Session 2 to 3, SFT copies the style of the training replies.
+**Other course link:** MLOps & Production Model Deployment: monitoring catches what offline evaluation missed.
+**What we built:** nothing yet; recorded in the README and the readiness checklist (known limitation 2).
+**Result:** test problem 24 (factorial). Student "Set the range from 1 to n." (23:07 UTC) and "Set the i in range(1, n)." (23:14 UTC): tutor "Good work!". Student "Set the i in range(1, n+1)." (correct, 23:15, 23:33 and 23:41 UTC): the same "Good work!". The tutor then told the student to run the code. Found by hand during the dry run on 2026-11-13 around 00:20 Paris time; the exchanges were then found in Langfuse (ClickHouse `events_full`, spans `tutor-turn`). Manual observation, not a results file.
+**Problem hit and fix:** no metric covers "confirms an incorrect fix" (the leak check only looks for given-away code; the judge evaluator for it is not calibrated). Next step: prompt v1.1.0 asking the student to check a proposed fix against the examples (MINOR version: rebuild data, retrain, re-evaluate), re-evaluated through the CI gate, plus test cases where the student proposes a wrong fix.
+**Exam-style question:** Why can a tutor with 0 leaks still hurt learning? **Answer:** leaks are one failure mode; praising a wrong fix is another, and a metric only catches the failures it was designed for, so manual review and traces are needed to find new ones.
