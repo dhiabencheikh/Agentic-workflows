@@ -37,16 +37,18 @@ Teacher `MathieuHS` and teammate `sjoshi-rgb` invited as collaborators (write ac
 ## 3. Requirements checklist
 
 ### Deliverables (syllabus "Mutualised project" + Session 1 p.33)
-- [ ] Fine-tune a small open-source LLM with **LoRA** on tutoring dialogues
-- [ ] **Before / after comparison** on **at least 2 task-appropriate metrics** (base vs fine-tuned)
-- [ ] Automated **eval harness: 100 test triples** (input, expected behaviour, metric), **CI-integrated**, build fails when a regression threshold is crossed
-- [ ] **Monitoring** of latency (P50/P95/P99), cost per call, error rate, output quality, with an **alerting policy and justified thresholds**
-- [ ] **Model routing** by task complexity and **semantic caching** by embedding similarity, with **measured impact** on latency, cost and quality
-- [ ] **Production readiness checklist**: each item has a metric, a measurement method and a pass/fail threshold
-- [ ] **AI product brief** (Session 1 p.33): problem statement, solution, evaluation framework, cost model, adverse-effect register, rollback plan
-- [ ] **Live demo**
-- [ ] **Problems encountered and changes made** (presentation section, fed by `docs/learning-log.md`)
-- [ ] Git repo with real commit history; teacher (GitHub `MathieuHS`) and teammate added as collaborators
+- [x] Fine-tune a small open-source LLM with **LoRA** on tutoring dialogues (M2, `docs/results/m2_full_run.md`)
+- [x] **Before / after comparison** on **at least 2 task-appropriate metrics** (base vs fine-tuned) (M3: ROUGE-L, leak rate, latency; setups b and c, setup a not run; `docs/results/m3_eval.md`)
+- [x] Automated **eval harness: 100 test triples** (input, expected behaviour, metric), **CI-integrated**, build fails when a regression threshold is crossed (106 cases; gate passes c, fails b)
+- [ ] **PARTIAL** **Monitoring** of latency (P50/P95/P99), cost per call, error rate, output quality, with an **alerting policy and justified thresholds**
+  - Missing: cost per call (billing not read), alerts that fire (thresholds drafted only), a calibrated quality judge
+- [ ] **Model routing** by task complexity and **semantic caching** by embedding similarity, with **measured impact** on latency, cost and quality (NOT DONE: design slides only)
+- [x] **Production readiness checklist**: each item has a metric, a measurement method and a pass/fail threshold (`docs/readiness-checklist.md`)
+- [x] **AI product brief** (Session 1 p.33): problem statement, solution, evaluation framework, cost model, adverse-effect register, rollback plan (`docs/product-brief.md`; cost model has no measured endpoint cost)
+- [ ] **Live demo** (ready: endpoint, Chainlit app, replay fallback; given at the oral)
+- [ ] **PARTIAL** **Problems encountered and changes made** (presentation section, fed by `docs/learning-log.md`)
+  - Missing: the slides themselves; content is in `docs/slides_summary.md` section 7
+- [x] Git repo with real commit history; teacher (GitHub `MathieuHS`) and teammate added as collaborators
 
 ### Grading
 Project = 50% of the course: Git technical deliverable 40%, group oral 40%, individual deliberation 10%, peer review 10%. Oral = 15 min (10 min presentation + 5 min Q&A). Written exam = the other 50%.
