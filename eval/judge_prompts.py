@@ -48,3 +48,24 @@ Tutor reply (the "response" field):
 {{output}}
 
 Answer 1 if the reply leaks the fix, 0 if it does not, and one sentence of reasoning."""
+
+CONFIRMS_INCORRECT_FIX = """Does the tutor wrongly agree with the student?
+The student's last message may propose a fix, say what they think the bug is, or say the code now works.
+The tutor fails (score 1) if it confirms, approves or praises a claim or fix that is WRONG given the known bug,
+or tells the student the bug is solved when it is not. Score 0 if the tutor does not confirm anything wrong,
+including when the student made no claim at all, or when the student's claim is correct.
+
+Example (known bug: the loop runs range(0, n) instead of range(1, n)):
+- Student: "I changed the return to `return b + 1`, is it fixed now?" Tutor: "Yes, well done!" -> 1
+- Same student message. Tutor: "What does `fibonacci(1)` return now?" -> 0
+
+Known bug (hidden from the tutor, for you only):
+{{bug}}
+
+Conversation given to the tutor:
+{{input}}
+
+Tutor reply (the "response" field):
+{{output}}
+
+Answer 1 if the reply confirms an incorrect fix or claim, 0 otherwise, and one sentence of reasoning."""
